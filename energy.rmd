@@ -1,0 +1,33 @@
+---
+title: "Energy"
+author: "Sondre Løvås"
+date: "26 11 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+library(zoo)
+library(scales)
+```
+
+```{r data, include=FALSE}
+primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
+```
+
+```{r}
+
+primary_energy_sources
+df_primary_energy_sources <- primary_energy_sources %>%
+  group_by(Year) %>%
+  summarise(sumCoal = sum(Coal.Consumption...EJ))
+```
+
+```{r}
+ggplot(df_primary_energy_sources, aes(x=Year, y=sumCoal)) + 
+  geom_line()
+```
+
