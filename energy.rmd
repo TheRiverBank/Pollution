@@ -12,22 +12,56 @@ library(dplyr)
 library(lubridate)
 library(zoo)
 library(scales)
+library(reshape2)
+library(ggplot2)
 ```
 
 ```{r data, include=FALSE}
 primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
+global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
 ```
 
 ```{r}
-
 primary_energy_sources
 df_primary_energy_sources <- primary_energy_sources %>%
   group_by(Year) %>%
   summarise(sumCoal = sum(Coal.Consumption...EJ))
 ```
 
-```{r}
-ggplot(df_primary_energy_sources, aes(x=Year, y=sumCoal)) + 
+```{r globalEnergySources}
+newColNames <- c("Coal", "Oil", "Gas", "Hydropower", "Nuclear", "Solar", "Other Renewables", "Biomass", "Wind", "Biofuels")
+df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>%
+  filter(Year >= 1965) %>%
+  mutate(variable =
+           recode(variable,
+                  "Coal..TWh..direct.energy."="Coal",
+                  "Oil..TWh..direct.energy."="Oil",
+                  "Gas..TWh..direct.energy." = "Gas",
+                  "Hydropower..TWh..direct.energy."="Hydropower",
+                  "Nuclear..TWh..direct.energy."="Nuclear",
+                  "Solar..TWh..direct.energy."="Solar",
+                  "Other.renewables..TWh..direct.energy."="Other renewables",
+                  "Traditional.biomass..TWh..direct.energy."="Biomass",
+                  "Wind..TWh..direct.energy."="Wind",
+                  "Biofuels..TWh..direct.energy." = "Biofuels"))
+
+df_global_primary_nonrenew <- df_global_primary_energy %>%
+  filter(variable == "Coal" | variable == "Oil" | variable == "Gas")
+
+df_global_primary_renew <- df_global_primary_energy %>%
+  filter(variable == "Hydropower" | variable == "Solar" | variable == "nuclear" | 
+         variable == "other Renewables" | variable == "Wind")
+```
+
+
+This is the global 
+```{r plotGlobalEnergySources, fig.width=14}
+ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
+  labs(y="TWh", title="Global primary energy sources.", colour="Source") +
   geom_line()
+```
+
+```{r}
+
 ```
 
