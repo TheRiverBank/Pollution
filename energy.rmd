@@ -19,6 +19,7 @@ library(ggplot2)
 ```{r data, include=FALSE}
 primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
+renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
 ```
 
 ```{r}
@@ -52,6 +53,16 @@ df_global_primary_renew <- df_global_primary_energy %>%
          variable == "Other renewables" | variable == "Wind")
 ```
 
+```{r renewableEnergyInvestment}
+df_renewable_investment <- renewable_energy_investment %>%
+  group_by(Entity) %>%
+  rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
+df_renewable_investment
+```
+
+
+
+
 
 This plot shows global consumption of primary energy sources. 
 ```{r plotGlobalEnergySources, fig.width=14}
@@ -59,15 +70,29 @@ ggplot(df_global_primary_energy, aes(Year, value, col=variable)) +
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
   geom_line()
 ```
+As expected, coal, oil and gas are the worlds primary energy sources. The next visualization tries to emphasize in a higher degree.
+
+```{r}
+ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
+  labs(y="TWh", title="Global primary energy sources.", colour="Source") +
+  geom_area(position = "stack") 
+```
+
 
 Dividing the renewable sources from the nonrenewable sources, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
 ```{r plotNonVsRenew, fig.width=14}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
-  labs(y="TWh", title="comsumption of renewable energy.", colour="Source") + 
+  labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
   geom_line()
 plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable)) +
-  labs(y="TWh", title="Consumption of nonrenewable energy.", color="Source") +
+  labs(y="TWh", title="Consumption of nonrenewable energy.", color="Nonrenewable sources") +
   geom_line()
 gridExtra::grid.arrange(plt_renew, plt_nonrenew, ncol=2)
+```
+
+```{r fig.width=14}
+ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) + 
+  labs(y="Investment in billion USD.") +
+  geom_line()
 ```
 
