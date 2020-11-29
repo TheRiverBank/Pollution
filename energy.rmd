@@ -29,7 +29,6 @@ df_primary_energy_sources <- primary_energy_sources %>%
 ```
 
 ```{r globalEnergySources}
-newColNames <- c("Coal", "Oil", "Gas", "Hydropower", "Nuclear", "Solar", "Other Renewables", "Biomass", "Wind", "Biofuels")
 df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>%
   filter(Year >= 1965) %>%
   mutate(variable =
@@ -50,18 +49,25 @@ df_global_primary_nonrenew <- df_global_primary_energy %>%
 
 df_global_primary_renew <- df_global_primary_energy %>%
   filter(variable == "Hydropower" | variable == "Solar" | variable == "nuclear" | 
-         variable == "other Renewables" | variable == "Wind")
+         variable == "Other renewables" | variable == "Wind")
 ```
 
 
-This is the global 
+This plot shows global consumption of primary energy sources. 
 ```{r plotGlobalEnergySources, fig.width=14}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
   geom_line()
 ```
 
-```{r}
-
+Dividing the renewable sources from the nonrenewable sources, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
+```{r plotNonVsRenew, fig.width=14}
+plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
+  labs(y="TWh", title="comsumption of renewable energy.", colour="Source") + 
+  geom_line()
+plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable)) +
+  labs(y="TWh", title="Consumption of nonrenewable energy.", color="Source") +
+  geom_line()
+gridExtra::grid.arrange(plt_renew, plt_nonrenew, ncol=2)
 ```
 
