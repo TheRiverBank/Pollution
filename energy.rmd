@@ -14,23 +14,49 @@ library(zoo)
 library(scales)
 library(reshape2)
 library(ggplot2)
+library(gridExtra)
 ```
 
 ```{r data, include=FALSE}
+emision_by_sector <- read.csv("data/ghg-emissions-by-sector.csv", stringsAsFactors = FALSE)
 primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
+global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors = FALSE, skip = 4)
+global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
 renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
 ```
 
-```{r}
-primary_energy_sources
-df_primary_energy_sources <- primary_energy_sources %>%
+```{r include=FALSE}
+emision_summarized <- emision_by_sector %>%
   group_by(Year) %>%
-  summarise(sumCoal = sum(Coal.Consumption...EJ))
+  summarise_at(vars(Agriculture..GHG.Emissions..CAIT.:Transport..GHG.Emissions..CAIT.), sum, na.rm=TRUE)
+
+df_emission_by_sector <- melt(emision_summarized, id.vars = c("Year")) %>%
+  mutate(variable =
+           recode(variable,
+                  "Agriculture..GHG.Emissions..CAIT."="Agriculture",
+                  "Bunker.Fuels..GHG.Emissions..CAIT."="Shipping",
+                  "Industry..GHG.Emissions..CAIT."="Industry",
+                  "Land.Use.Change.and.Forestry..GHG.Emissions..CAIT."="Land-Use Change and Forestry",
+                  "Waste..GHG.Emissions..CAIT."="Waste",
+                  "Buildings..GHG.Emissions..CAIT."="Buildings",
+                  "Electricity...Heat..GHG.Emissions..CAIT."="Electricity and Heat",
+                  "Fugitive.from.energy.production..GHG.Emissions..CAIT."="Fugitive",
+                  "Manufacturing.Construction.energy..GHG.Emissions..CAIT."="Manufacturing and Construction",
+                  "Other.Fuel.Combustion..GHG.Emissions..CAIT."="Other fuel combustion",
+                  "Transport..GHG.Emissions..CAIT."="Transport"))
+
+total_emission_2016 <- df_emission_by_sector %>%
+  filter(Year==2016) %>%
+  summarize(Totlal_Emission=sum(value, na.rm = TRUE))
+
+total_electricity_2016 <- df_emission_by_sector %>%
+  filter(Year==2016 & variable=="Electricity and Heat") %>%
+  summarize(Total_Electricity=sum(value, na.rm = TRUE))
 ```
 
-```{r globalEnergySources}
-df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>%
+```{r globalEnergySources, include=FALSE}
+df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # Melt data frame such that all sources are in one column.
   filter(Year >= 1965) %>%
   mutate(variable =
            recode(variable,
@@ -43,44 +69,96 @@ df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>%
                   "Other.renewables..TWh..direct.energy."="Other renewables",
                   "Traditional.biomass..TWh..direct.energy."="Biomass",
                   "Wind..TWh..direct.energy."="Wind",
-                  "Biofuels..TWh..direct.energy." = "Biofuels"))
+                  "Biofuels..TWh..direct.energy." = "Biofuels")
+         )
 
+# Extract the nonrenewable sources.
 df_global_primary_nonrenew <- df_global_primary_energy %>%
   filter(variable == "Coal" | variable == "Oil" | variable == "Gas")
 
+# Extract renewable sources.
 df_global_primary_renew <- df_global_primary_energy %>%
   filter(variable == "Hydropower" | variable == "Solar" | variable == "nuclear" | 
          variable == "Other renewables" | variable == "Wind")
 ```
 
-```{r renewableEnergyInvestment}
+```{r renewableEnergyInvestment, include=FALSE}
 df_renewable_investment <- renewable_energy_investment %>%
   group_by(Entity) %>%
   rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
 df_renewable_investment
 ```
 
+```{r globalTempAnomaly, include=FALSE}
+df_global_temp_anomaly <- global_temp_anomaly %>%
+  mutate(Value = replace(Value, Value == -999, NA)) # NA values are represented as -999 in original dataset. 
+```
+
+```{r gloablCoEmission, include=FALSE}
+df_global_co_emission <- global_co_emission %>%
+  filter(Entity=="World" & Year >= 1880) %>%
+  group_by(Year) %>%
+  summarize(Sum_Year=sum(Annual.CO2.emissions))
+```
+
+```{r plotAstetics, include=FALSE}
+pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
+```
 
 
+In this project, pollution is discussed with an emphasis on air pollution.
+I will look at the main causes of pollution and the steps that are being taken to decrease the amount of toxic gases that are being released. 
+Human 
 
+<!-- The bad -->
 
-This plot shows global consumption of primary energy sources. 
-```{r plotGlobalEnergySources, fig.width=14}
+This plot shows how many million tonnes of greenhouse gasses that were released from 1990-2016, measured in the equivalent amount of carbon dioxide that would produce that same amount of energy.
+```{r echo=FALSE, fig.width=10}
+ggplot(df_emission_by_sector, aes(Year, value, col=variable)) + 
+  labs(y="Million tonnes", title="Emission by sector in million tonnes carbon dioxide-equivalents", colour="Sector") +
+  geom_line()
+```
+Electricity seems to be a big contributor to greenhouse gases. Of the `r format(round(total_emission_2016))` tonnes of greenhouse gases, electricity and heat makes out to be `r format(round((total_electricity_2016/total_emission_2016)*100))`% of the total emission.
+
+Let's look at the primary source of energy the world consumes. This will include energy used by the different sectors in the previous graph. 
+```{r echo=FALSE, fig.width=14}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
+  pltTheme +
   geom_line()
 ```
 As expected, coal, oil and gas are the worlds primary energy sources. The next visualization tries to emphasize in a higher degree.
 
-```{r}
+```{r echo=FALSE}
 ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
   geom_area(position = "stack") 
 ```
 
+The use of nonrenewable, and the greenhouse gases it emits, correlates to rising temperatures across the world. 
+Under is a visualization of rising temperatures and the amount of carbon dioxide emitted from fossil fuels. 
+
+```{r echo=FALSE, fig.width=14, fig.width=10}
+plt_emission <- ggplot(df_global_co_emission, aes(x=Year, y=Sum_Year)) +
+  geom_line(color="red") +
+  labs(y="Co2 emission in milion tonnes") +
+  pltTheme
+
+plt_temperature <- ggplot(df_global_temp_anomaly, aes(x=Year, y=Value)) +
+  geom_line(color="blue") +
+  labs(y="Temperature") +
+  pltTheme
+
+grid.arrange(plt_emission, plt_temperature, nrow=2)
+```
+There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between these two variables.
+
+furthermore, 
+
+<!-- The good -->
 
 Dividing the renewable sources from the nonrenewable sources, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
-```{r plotNonVsRenew, fig.width=14}
+```{r plotNonVsRenew, echo=FALSE, fig.width=14}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
   geom_line()
@@ -90,9 +168,16 @@ plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable
 gridExtra::grid.arrange(plt_renew, plt_nonrenew, ncol=2)
 ```
 
-```{r fig.width=14}
+This is partly an effect of greater investment in renewable energy sources.
+```{r echo=FALSE, fig.width=14}
 ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) + 
   labs(y="Investment in billion USD.") +
   geom_line()
 ```
 
+
+
+Data sources:
+
+Global temperature anomaly
+https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/ytd/12/1880-2019
