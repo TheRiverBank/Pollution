@@ -23,6 +23,8 @@ primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.cs
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
 global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors = FALSE, skip = 4)
 global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
+ambient_air_pollution_deaths <- read.csv("data/ambient-air-pollution-deaths.csv", stringsAsFactors = FALSE, skip = 2)
+natural_disasters_by_type <- read.csv("data/natural-disasters-by-type.csv", stringsAsFactors = FALSE)
 renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
 ```
 
@@ -74,19 +76,17 @@ df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # 
 
 # Extract the nonrenewable sources.
 df_global_primary_nonrenew <- df_global_primary_energy %>%
-  filter(variable == "Coal" | variable == "Oil" | variable == "Gas")
+  filter(variable == c("Coal", "Oil", "Gas"))
 
 # Extract renewable sources.
 df_global_primary_renew <- df_global_primary_energy %>%
-  filter(variable == "Hydropower" | variable == "Solar" | variable == "nuclear" | 
-         variable == "Other renewables" | variable == "Wind")
+  filter(variable == c("Hydropower", "Solar", "nuclear"," Other renewables", "Wind"))
 ```
 
 ```{r renewableEnergyInvestment, include=FALSE}
 df_renewable_investment <- renewable_energy_investment %>%
   group_by(Entity) %>%
   rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
-df_renewable_investment
 ```
 
 ```{r globalTempAnomaly, include=FALSE}
@@ -100,6 +100,22 @@ df_global_co_emission <- global_co_emission %>%
   group_by(Year) %>%
   summarize(Sum_Year=sum(Annual.CO2.emissions))
 ```
+
+```{r ambientAirPollutionDeaths, include=FALSE}
+# Variables are represented in the form: median [range].
+pollution_deaths_2016 <- ambient_air_pollution_deaths %>%
+  filter(Cause=="Total") %>%
+  mutate(Both.sexes=as.numeric(gsub("([0-9]+) .*", "\\1", Both.sexes))) %>% # Only want median value.
+  summarise(Sum_Deaths=sum(Both.sexes, na.rm = TRUE))
+```
+
+```{r include=FALSE}
+df_natural_disasters <- natural_disasters_by_type %>%
+  filter(Entity==c("Wildfire", "Drought", "Extreme temperature", "Flood")) %>%
+  rename("Num_Disasters"=Number.of.disasters..EMDAT..2020..)
+```
+
+
 
 ```{r plotAstetics, include=FALSE}
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
@@ -116,11 +132,12 @@ This plot shows how many million tonnes of greenhouse gasses that were released 
 ```{r echo=FALSE, fig.width=10}
 ggplot(df_emission_by_sector, aes(Year, value, col=variable)) + 
   labs(y="Million tonnes", title="Emission by sector in million tonnes carbon dioxide-equivalents", colour="Sector") +
+  pltTheme +
   geom_line()
 ```
-Electricity seems to be a big contributor to greenhouse gases. Of the `r format(round(total_emission_2016))` tonnes of greenhouse gases, electricity and heat makes out to be `r format(round((total_electricity_2016/total_emission_2016)*100))`% of the total emission.
+Electricity seems to be a big contributor to greenhouse gases. Of the `r format(round(total_emission_2016), big.mark=",",scientific=FALSE)` tonnes of greenhouse gases, electricity and heat makes out to be `r format(round((total_electricity_2016/total_emission_2016)*100))`% of the total emission.
 
-Let's look at the primary source of energy the world consumes. This will include energy used by the different sectors in the previous graph. 
+Let's look at the primary sources of energy the world consumes. This will include energy used by the different sectors in the previous graph. 
 ```{r echo=FALSE, fig.width=14}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
@@ -132,10 +149,11 @@ As expected, coal, oil and gas are the worlds primary energy sources. The next v
 ```{r echo=FALSE}
 ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
+  pltTheme +
   geom_area(position = "stack") 
 ```
 
-The use of nonrenewable, and the greenhouse gases it emits, correlates to rising temperatures across the world. 
+The use of nonrenewable energy, and the greenhouse gases it emits, correlates to rising temperatures across the world. 
 Under is a visualization of rising temperatures and the amount of carbon dioxide emitted from fossil fuels. 
 
 ```{r echo=FALSE, fig.width=14, fig.width=10}
@@ -153,7 +171,16 @@ grid.arrange(plt_emission, plt_temperature, nrow=2)
 ```
 There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between these two variables.
 
-furthermore, 
+Furthermore, ambient air pollution which is pollution from motor vehicles, oil and coal power plants, oil refineries etc. has resulted in `r format(pollution_deaths_2016,big.mark=",",scientific=FALSE)` deaths across the globe in 2016$^{[1][2]}$. Research has also suggested that greenhouse gases has increased the  frequency of natural disasters like hurricanes, floods, storms, droughts and wildfires$^{3}$.
+```{r echo=FALSE, fig.width=10}
+ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, color=Entity)) +
+  labs(y="Value", title="Number of natural disasters.") +
+  geom_line() +
+  pltTheme +
+  theme(legend.position = "none") +
+  facet_wrap(~Entity, scales = "free_y")
+```
+https://ourworldindata.org/natural-disasters
 
 <!-- The good -->
 
@@ -161,9 +188,11 @@ Dividing the renewable sources from the nonrenewable sources, it can bee seen th
 ```{r plotNonVsRenew, echo=FALSE, fig.width=14}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
+  pltTheme +
   geom_line()
 plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable)) +
   labs(y="TWh", title="Consumption of nonrenewable energy.", color="Nonrenewable sources") +
+  pltTheme +
   geom_line()
 gridExtra::grid.arrange(plt_renew, plt_nonrenew, ncol=2)
 ```
@@ -172,6 +201,7 @@ This is partly an effect of greater investment in renewable energy sources.
 ```{r echo=FALSE, fig.width=14}
 ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) + 
   labs(y="Investment in billion USD.") +
+  pltTheme +
   geom_line()
 ```
 
@@ -181,3 +211,6 @@ Data sources:
 
 Global temperature anomaly
 https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/ytd/12/1880-2019
+[1].https://www.who.int/airpollution/ambient/pollutants/en/ WHO Ambient air pollution
+[2].https://apps.who.int/gho/data/node.main.BODAMBIENTAIRDTHS?lang=en WHO Deaths caused by ambient air pollution
+[3].Anderson, Jason, and Camilla Bausch. "Climate Change and Natural Disasters: Scientific evidence of a possible relation between recent natural disasters and climate change." Policy Department Economic and Scientific Policy 2 (2006). 
