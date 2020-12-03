@@ -26,6 +26,7 @@ global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
 ambient_air_pollution_deaths <- read.csv("data/ambient-air-pollution-deaths.csv", stringsAsFactors = FALSE, skip = 2)
 natural_disasters_by_type <- read.csv("data/natural-disasters-by-type.csv", stringsAsFactors = FALSE)
 renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
+electric_car_sales <- read.csv("data/global-electric-car-sales-by-key-markets-2010-2020.csv", stringsAsFactors = FALSE, skip = 3)
 ```
 
 ```{r include=FALSE}
@@ -113,6 +114,20 @@ pollution_deaths_2016 <- ambient_air_pollution_deaths %>%
 df_natural_disasters <- natural_disasters_by_type %>%
   filter(Entity==c("Wildfire", "Drought", "Extreme temperature", "Flood")) %>%
   rename("Num_Disasters"=Number.of.disasters..EMDAT..2020..)
+```
+
+```{r}
+electric_car_sales
+electric_car_sales <- electric_car_sales %>%
+  select(c("X", "Market.Share"))
+
+df_electric_car_sales <- melt(electric_car_sales, id.vars = "X") %>%
+  rename("Year"="X") %>%
+  filter(Year < 2020) %>%
+  group_by(Year) %>%
+  summarize(Sum_Market_Share=sum(value, na.rm=TRUE))
+
+df_electric_car_sales
 ```
 
 
@@ -205,6 +220,15 @@ ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) +
   geom_line()
 ```
 
+Returning to emissions by sector, it can be seen that transport is the next highest source of carbon dioxide-equivalent emission. Progress has been made towards shifting to electric, as the sales of electric cars rise every year. Due to environmental reasons, driving an electric car has been given a lot of benefits. In Norway the price of charging an electric car versus using fossil fuel favors the electric car heavily when it comes to cost. Also, taxes and insurance comes cheaper with an electric car.
+
+```{r}
+ggplot(df_electric_car_sales, aes(x=Year, y=Sum_Market_Share/100)) +
+  pltTheme +
+  scale_y_continuous(labels=percent) +
+  scale_x_continuous(breaks=seq(2010, 2019, 1)) +
+  geom_col()
+```
 
 
 Data sources:
