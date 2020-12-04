@@ -15,6 +15,7 @@ library(scales)
 library(reshape2)
 library(ggplot2)
 library(gridExtra)
+library(maps)
 ```
 
 ```{r data, include=FALSE}
@@ -25,6 +26,8 @@ global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors
 global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
 ambient_air_pollution_deaths <- read.csv("data/ambient-air-pollution-deaths.csv", stringsAsFactors = FALSE, skip = 2)
 natural_disasters_by_type <- read.csv("data/natural-disasters-by-type.csv", stringsAsFactors = FALSE)
+sea_level_rise <- read.csv("data/sea-level-rise.csv", stringsAsFactors = FALSE, skip = 5)
+ice_amount <-read.csv("data/ice-amount.csv", stringsAsFactors = FALSE)
 renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
 electric_car_sales <- read.csv("data/global-electric-car-sales-by-key-markets-2010-2020.csv", stringsAsFactors = FALSE, skip = 3)
 ```
@@ -117,6 +120,24 @@ df_natural_disasters <- natural_disasters_by_type %>%
 ```
 
 ```{r}
+df_sea_level_rise <- melt(sea_level_rise, id.vars = "year") %>%
+  drop_na() 
+ 
+ave_sea_level_rise <- df_sea_level_rise %>%
+  summarise(avg_change = mean(c(NA, diff(value)), na.rm = TRUE))
+ave_sea_level_rise
+```
+
+```{r}
+df_arctic_sea_ice <- ice_amount %>%
+  select(c(year, extent))
+
+mean_ice_melt <- df_arctic_sea_ice %>%
+  summarise(avg_change = mean(c(NA, diff(extent)), na.rm = TRUE))
+mean_ice_melt
+```
+
+```{r include=FALSE}
 electric_car_sales
 electric_car_sales <- electric_car_sales %>%
   select(c("X", "Market.Share"))
@@ -190,12 +211,54 @@ Furthermore, ambient air pollution which is pollution from motor vehicles, oil a
 ```{r echo=FALSE, fig.width=10}
 ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, color=Entity)) +
   labs(y="Value", title="Number of natural disasters.") +
-  geom_line() +
+  geom_col() +
   pltTheme +
   theme(legend.position = "none") +
   facet_wrap(~Entity, scales = "free_y")
 ```
 https://ourworldindata.org/natural-disasters
+
+Floods could be linked to rising sea levels which again is caused by melting ice on the arctics.
+This plot shows the rate at which ice is depleting.
+```{r}
+ggplot(df_arctic_sea_ice, aes(x=year, y=extent)) +
+  labs(y="Million square km") +
+  pltTheme +
+  geom_line()
+```
+https://climate.nasa.gov/vital-signs/arctic-sea-ice/ 
+
+And here it is shown the rise in water levels
+```{r}
+ggplot(df_sea_level_rise, aes(x=year, y=value, colour=variable)) +
+  labs(y="Change in water levels") +
+  geom_line()
+```
+
+```{r}
+ocean <- c("ocean1,", "ocean2")
+longditude <- c(-20, -39)
+latitude <- c(33, 35)
+value <- c(5, 10)
+
+testdata <- data.frame(ocean, longditude, latitude, value)
+p <- ggplot() + coord_fixed() +
+  xlab("") + ylab("")
+world_map <- map_data("world")
+base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
+                                     colour="black", fill="black") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+        panel.background = element_rect(fill = 'white', colour = 'white'), 
+        axis.line = element_line(colour = "white"), legend.position="none",
+        axis.ticks=element_blank(), axis.text.x=element_blank(),
+        axis.text.y=element_blank())
+
+base_world <- base_world_messy + geom_point(data=testdata, aes(x=longditude, y=latitude, size=value),
+                                            colour="blue", fill="blue", pch=21, alpha=I(0.3))
+
+base_world
+```
+
 
 <!-- The good -->
 
@@ -205,10 +268,12 @@ plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) +
   labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
   pltTheme +
   geom_line()
+
 plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable)) +
   labs(y="TWh", title="Consumption of nonrenewable energy.", color="Nonrenewable sources") +
   pltTheme +
   geom_line()
+
 gridExtra::grid.arrange(plt_renew, plt_nonrenew, ncol=2)
 ```
 
@@ -222,17 +287,17 @@ ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) +
 
 Returning to emissions by sector, it can be seen that transport is the next highest source of carbon dioxide-equivalent emission. Progress has been made towards shifting to electric, as the sales of electric cars rise every year. Due to environmental reasons, driving an electric car has been given a lot of benefits. In Norway the price of charging an electric car versus using fossil fuel favors the electric car heavily when it comes to cost. Also, taxes and insurance comes cheaper with an electric car.
 
-```{r}
+```{r fig.width=10}
 ggplot(df_electric_car_sales, aes(x=Year, y=Sum_Market_Share/100)) +
   pltTheme +
   scale_y_continuous(labels=percent) +
   scale_x_continuous(breaks=seq(2010, 2019, 1)) +
+  labs(y="Market share", title="Electric car market share.") +
   geom_col()
 ```
+IEA, Global electric car sales by key markets, 2010-2020, IEA, Paris https://www.iea.org/data-and-statistics/charts/global-electric-car-sales-by-key-markets-2015-2020
 
-
-Data sources:
-
+Sources:
 Global temperature anomaly
 https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/ytd/12/1880-2019
 [1].https://www.who.int/airpollution/ambient/pollutants/en/ WHO Ambient air pollution
