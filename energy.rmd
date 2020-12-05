@@ -113,20 +113,72 @@ pollution_deaths_2016 <- ambient_air_pollution_deaths %>%
   summarise(Sum_Deaths=sum(Both.sexes, na.rm = TRUE))
 ```
 
-```{r include=FALSE}
+```{r naturalDisaters, include=FALSE}
 df_natural_disasters <- natural_disasters_by_type %>%
   filter(Entity==c("Wildfire", "Drought", "Extreme temperature", "Flood")) %>%
   rename("Num_Disasters"=Number.of.disasters..EMDAT..2020..)
 ```
 
-```{r}
+```{r globalSeaLevel}
 df_sea_level_rise <- melt(sea_level_rise, id.vars = "year") %>%
   drop_na() 
  
 ave_sea_level_rise <- df_sea_level_rise %>%
-  summarise(avg_change = mean(c(NA, diff(value)), na.rm = TRUE))
+  summarise(avg_change = mean(c(NA, diff(value)), na.rm = TRUE)) %>%
+  mutate(name="TEST")
 ave_sea_level_rise
 ```
+
+```{r regionalSeaLevelScrape, eval=FALSE, include=FALSE}
+# Scrape sea level data. 
+# This chuck will download sea data from https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php,
+# and is set to not run. The data up until December 2020 is already found in the 'regional sea level' folder.
+# If more recent data is wanted, set eval to true.
+sea_level_URL <- "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php"
+sea_URL_short <- "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/"
+webpage <- read_html(sea_level_URL)
+
+j <- 0
+#Scrape csv file names and download them.
+for (i in 4:27) {
+  ocean_name_node <- sprintf("#list2 tr:nth-child(%s) th", i)
+  ocean_name <- webpage %>% html_nodes(ocean_name_node) %>% html_text()
+  ocean_name_nospace <- gsub(" ", "-", ocean_name)
+  file_node<- sprintf("#list2 tr:nth-child(%s) th+ td a:nth-child(1)", i)
+  file_name <- webpage %>% html_nodes(file_node) %>% html_attr("href")
+  file_URL <- paste(sea_URL_short, file_name, sep="")
+  dest <- paste("data/regional-sea-level/", ocean_name_nospace, ".csv", sep="")
+  download.file(url=file_URL, destfile = dest)
+}
+```
+
+
+```{r wrangleRegionalSeaLevelData}
+# Get average change in selected oceans.
+oceans <- c("Pacific-Ocean", "Atlantic-Ocean", "Indian-Ocean", "Southern-Ocean", "North-Sea")
+lo <- c(-5, -14, -25, -68, 56)
+la <- c(-140, -19, 79, -160, 3) 
+
+df_regional_sea_average <- NULL
+i <- 0
+for (ocean in oceans) {
+  file_path <- paste("data/regional-sea-level/", ocean, ".csv", sep="")
+  file <- read.csv(file_path, stringsAsFactors = FALSE, skip = 5)
+  average_sea_level_change <- melt(file, id.vars = "year") %>%
+    summarise(Average_Change = mean(c(NA, diff(value)), na.rm=TRUE))
+  if (is.null(df_regional_sea_average)) {
+    df_regional_sea_average <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
+  } else {
+    df_temp <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
+    df_regional_sea_average <-  rbind(df_regional_sea_average, df_temp)
+  }
+}
+test_change <- c(1,2,3,4,5)
+test <- cbind(df_regional_sea_average, lo, la, test_change)
+
+test
+```
+
 
 ```{r}
 df_arctic_sea_ice <- ice_amount %>%
@@ -150,7 +202,6 @@ df_electric_car_sales <- melt(electric_car_sales, id.vars = "X") %>%
 
 df_electric_car_sales
 ```
-
 
 
 ```{r plotAstetics, include=FALSE}
@@ -235,26 +286,22 @@ ggplot(df_sea_level_rise, aes(x=year, y=value, colour=variable)) +
   geom_line()
 ```
 
-```{r}
-ocean <- c("ocean1,", "ocean2")
-longditude <- c(-20, -39)
-latitude <- c(33, 35)
-value <- c(5, 10)
-
-testdata <- data.frame(ocean, longditude, latitude, value)
+```{r fig.width=14}
 p <- ggplot() + coord_fixed() +
   xlab("") + ylab("")
 world_map <- map_data("world")
 base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
-                                     colour="black", fill="black") +
+                                    fill="lightblue") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
         panel.background = element_rect(fill = 'white', colour = 'white'), 
-        axis.line = element_line(colour = "white"), legend.position="none",
+        axis.line = element_line(colour = "white"),
         axis.ticks=element_blank(), axis.text.x=element_blank(),
         axis.text.y=element_blank())
 
-base_world <- base_world_messy + geom_point(data=testdata, aes(x=longditude, y=latitude, size=value),
-                                            colour="blue", fill="blue", pch=21, alpha=I(0.3))
+base_world <- base_world_messy + 
+  geom_point(data=test, aes(x=la, y=lo, fill=Ocean), size=abs(test$Average_Change*100), pch=21, alpha=I(0.3)) +
+  labs(colour="Ocean")
+  
 
 base_world
 ```
