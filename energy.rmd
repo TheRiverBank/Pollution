@@ -5,6 +5,10 @@ date: "26 11 2020"
 output: html_document
 ---
 
+In this project, pollution is discussed with an emphasis on air pollution.
+I will look at the main causes of pollution and the steps that are being taken to decrease the amount of toxic gases that are being released. 
+Human 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
@@ -16,13 +20,18 @@ library(reshape2)
 library(ggplot2)
 library(gridExtra)
 library(maps)
+library(rvest)
+library(gganimate)
 ```
+
+
 
 ```{r data, include=FALSE}
 emision_by_sector <- read.csv("data/ghg-emissions-by-sector.csv", stringsAsFactors = FALSE)
 primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
 global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors = FALSE, skip = 4)
+sea_surface_temp <- read.csv("data/sea-surface-temp.csv", stringsAsFactors = FALSE, skip = 6)
 global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
 ambient_air_pollution_deaths <- read.csv("data/ambient-air-pollution-deaths.csv", stringsAsFactors = FALSE, skip = 2)
 natural_disasters_by_type <- read.csv("data/natural-disasters-by-type.csv", stringsAsFactors = FALSE)
@@ -98,6 +107,13 @@ df_global_temp_anomaly <- global_temp_anomaly %>%
   mutate(Value = replace(Value, Value == -999, NA)) # NA values are represented as -999 in original dataset. 
 ```
 
+```{r seaLeveLTemp, include=FALSE}
+sea_surface_temp
+df_sea_surface_temp <- sea_surface_temp %>%
+  select(Year, Annual.anomaly)
+```
+
+
 ```{r gloablCoEmission, include=FALSE}
 df_global_co_emission <- global_co_emission %>%
   filter(Entity=="World" & Year >= 1880) %>%
@@ -119,14 +135,11 @@ df_natural_disasters <- natural_disasters_by_type %>%
   rename("Num_Disasters"=Number.of.disasters..EMDAT..2020..)
 ```
 
-```{r globalSeaLevel}
-df_sea_level_rise <- melt(sea_level_rise, id.vars = "year") %>%
-  drop_na() 
- 
-ave_sea_level_rise <- df_sea_level_rise %>%
-  summarise(avg_change = mean(c(NA, diff(value)), na.rm = TRUE)) %>%
-  mutate(name="TEST")
-ave_sea_level_rise
+```{r globalSeaLevel, include=FALSE}
+df_sea_level_rise_global <- melt(sea_level_rise, id.vars = "year") %>%
+  drop_na() %>%
+  mutate(Ocean="Global")
+df_sea_level_rise_global
 ```
 
 ```{r regionalSeaLevelScrape, eval=FALSE, include=FALSE}
@@ -138,55 +151,53 @@ sea_level_URL <- "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR
 sea_URL_short <- "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/"
 webpage <- read_html(sea_level_URL)
 
+desired_oceans <- c("Pacific Ocean", "Atlantic Ocean", "Indian Ocean")
+
 j <- 0
 #Scrape csv file names and download them.
 for (i in 4:27) {
   ocean_name_node <- sprintf("#list2 tr:nth-child(%s) th", i)
   ocean_name <- webpage %>% html_nodes(ocean_name_node) %>% html_text()
-  ocean_name_nospace <- gsub(" ", "-", ocean_name)
-  file_node<- sprintf("#list2 tr:nth-child(%s) th+ td a:nth-child(1)", i)
-  file_name <- webpage %>% html_nodes(file_node) %>% html_attr("href")
-  file_URL <- paste(sea_URL_short, file_name, sep="")
-  dest <- paste("data/regional-sea-level/", ocean_name_nospace, ".csv", sep="")
-  download.file(url=file_URL, destfile = dest)
+  if (ocean_name %in% desired_oceans) {
+    ocean_name_nospace <- gsub(" ", "-", ocean_name)
+    file_node<- sprintf("#list2 tr:nth-child(%s) th+ td a:nth-child(1)", i)
+    file_name <- webpage %>% html_nodes(file_node) %>% html_attr("href")
+    file_URL <- paste(sea_URL_short, file_name, sep="")
+    dest <- paste("data/regional-sea-level/", ocean_name_nospace, ".csv", sep="")
+    download.file(url=file_URL, destfile = dest)
+  }
 }
 ```
 
-
-```{r wrangleRegionalSeaLevelData}
+```{r wrangleRegionalSeaLevelData, include=FALSE}
 # Get average change in selected oceans.
-oceans <- c("Pacific-Ocean", "Atlantic-Ocean", "Indian-Ocean", "Southern-Ocean", "North-Sea")
-lo <- c(-5, -14, -25, -68, 56)
-la <- c(-140, -19, 79, -160, 3) 
+oceans <- c("Pacific-Ocean", "Atlantic-Ocean", "Indian-Ocean")
 
-df_regional_sea_average <- NULL
+df_sea_level_rise_regional <- NULL
 i <- 0
 for (ocean in oceans) {
   file_path <- paste("data/regional-sea-level/", ocean, ".csv", sep="")
   file <- read.csv(file_path, stringsAsFactors = FALSE, skip = 5)
-  average_sea_level_change <- melt(file, id.vars = "year") %>%
-    summarise(Average_Change = mean(c(NA, diff(value)), na.rm=TRUE))
-  if (is.null(df_regional_sea_average)) {
-    df_regional_sea_average <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
+  average_sea_level_change <- melt(file, id.vars = "year")
+  if (is.null(df_sea_level_rise_regional)) {
+    df_sea_level_rise_regional <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
   } else {
     df_temp <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
-    df_regional_sea_average <-  rbind(df_regional_sea_average, df_temp)
+    df_sea_level_rise_regional <-  rbind(df_sea_level_rise_regional, df_temp)
   }
 }
-test_change <- c(1,2,3,4,5)
-test <- cbind(df_regional_sea_average, lo, la, test_change)
 
-test
+df_sea_level_rise_regional <- df_sea_level_rise_regional %>%
+  rename("year"=Average_change.year, "variable"=Average_change.variable, "value"=Average_change.value)
+df_sea_level_rise_regional
 ```
 
-
-```{r}
+```{r include=FALSE}
 df_arctic_sea_ice <- ice_amount %>%
   select(c(year, extent))
 
 mean_ice_melt <- df_arctic_sea_ice %>%
   summarise(avg_change = mean(c(NA, diff(extent)), na.rm = TRUE))
-mean_ice_melt
 ```
 
 ```{r include=FALSE}
@@ -208,10 +219,6 @@ df_electric_car_sales
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
-In this project, pollution is discussed with an emphasis on air pollution.
-I will look at the main causes of pollution and the steps that are being taken to decrease the amount of toxic gases that are being released. 
-Human 
 
 <!-- The bad -->
 
@@ -241,20 +248,25 @@ ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) +
 ```
 
 The use of nonrenewable energy, and the greenhouse gases it emits, correlates to rising temperatures across the world. 
-Under is a visualization of rising temperatures and the amount of carbon dioxide emitted from fossil fuels. 
+Under is a visualization of rising temperatures in both land and sea surface, and the amount of carbon dioxide emitted from fossil fuels. 
 
-```{r echo=FALSE, fig.width=14, fig.width=10}
+```{r echo=FALSE, fig.width=14, fig.width=10, fig.height=10}
 plt_emission <- ggplot(df_global_co_emission, aes(x=Year, y=Sum_Year)) +
   geom_line(color="red") +
   labs(y="Co2 emission in milion tonnes") +
   pltTheme
 
-plt_temperature <- ggplot(df_global_temp_anomaly, aes(x=Year, y=Value)) +
+plt_temperature_land <- ggplot(df_global_temp_anomaly, aes(x=Year, y=Value)) +
   geom_line(color="blue") +
-  labs(y="Temperature") +
+  labs(y="Temperature land") +
   pltTheme
 
-grid.arrange(plt_emission, plt_temperature, nrow=2)
+plt_temperature_sea <- ggplot(df_sea_surface_temp, aes(x=Year, y=Annual.anomaly)) +
+  geom_line(color="green") +
+  labs(y="Temperature sea surface") +
+  pltTheme
+
+grid.arrange(plt_emission, plt_temperature_land, plt_temperature_sea, nrow=3)
 ```
 There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between these two variables.
 
@@ -269,43 +281,31 @@ ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, color=Entity)) +
 ```
 https://ourworldindata.org/natural-disasters
 
-Floods could be linked to rising sea levels which again is caused by melting ice on the arctics.
-This plot shows the rate at which ice is depleting.
-```{r}
+Floods could be linked to rising sea levels which again is caused by melting ice in the arctics.
+This plot shows the rate at which ice is depleting from the arctic.
+```{r echo=FALSE}
 ggplot(df_arctic_sea_ice, aes(x=year, y=extent)) +
-  labs(y="Million square km") +
+  labs(y="Million square km.") +
   pltTheme +
   geom_line()
 ```
+
+
+
 https://climate.nasa.gov/vital-signs/arctic-sea-ice/ 
 
-And here it is shown the rise in water levels
-```{r}
-ggplot(df_sea_level_rise, aes(x=year, y=value, colour=variable)) +
-  labs(y="Change in water levels") +
-  geom_line()
+Here is a plot of changing water levels globally, and  for some of the larger oceans in the world. The change is expressed in millimeters and the sea level is thought to be rising by an average of three millimeters a year. 
+```{r echo=FALSE, fig.width=14}
+ggplot(data=df_sea_level_rise_regional, aes(x=year, y=value, color=variable)) +
+  geom_line(data=df_sea_level_rise_global) +
+  geom_line() +
+  geom_smooth() +
+  labs(y="Millimeters", title="Change is sea level.", colour="Altimeter") +
+  scale_x_continuous(breaks = seq(1992, 2020, by=5)) +
+  pltTheme +
+  facet_wrap(~Ocean)
 ```
-
-```{r fig.width=14}
-p <- ggplot() + coord_fixed() +
-  xlab("") + ylab("")
-world_map <- map_data("world")
-base_world_messy <- p + geom_polygon(data=world_map, aes(x=long, y=lat, group=group), 
-                                    fill="lightblue") +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-        panel.background = element_rect(fill = 'white', colour = 'white'), 
-        axis.line = element_line(colour = "white"),
-        axis.ticks=element_blank(), axis.text.x=element_blank(),
-        axis.text.y=element_blank())
-
-base_world <- base_world_messy + 
-  geom_point(data=test, aes(x=la, y=lo, fill=Ocean), size=abs(test$Average_Change*100), pch=21, alpha=I(0.3)) +
-  labs(colour="Ocean")
-  
-
-base_world
-```
-
+Altimetry data are provided by the NOAA Laboratory for Satellite Altimetry.
 
 <!-- The good -->
 
@@ -334,7 +334,7 @@ ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) +
 
 Returning to emissions by sector, it can be seen that transport is the next highest source of carbon dioxide-equivalent emission. Progress has been made towards shifting to electric, as the sales of electric cars rise every year. Due to environmental reasons, driving an electric car has been given a lot of benefits. In Norway the price of charging an electric car versus using fossil fuel favors the electric car heavily when it comes to cost. Also, taxes and insurance comes cheaper with an electric car.
 
-```{r fig.width=10}
+```{r echo=FALSE, fig.width=10}
 ggplot(df_electric_car_sales, aes(x=Year, y=Sum_Market_Share/100)) +
   pltTheme +
   scale_y_continuous(labels=percent) +
