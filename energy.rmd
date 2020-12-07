@@ -5,9 +5,29 @@ date: "26 11 2020"
 output: html_document
 ---
 
-In this project, pollution is discussed with an emphasis on air pollution.
-I will look at the main causes of pollution and the steps that are being taken to decrease the amount of toxic gases that are being released. 
-Human 
+
+# Data sources
+Emission by sector: https://www.climatewatchdata.org/data-explorer/historical-emissions  
+Primary energy sources: https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html  
+sea surface temperature: https://www.epa.gov/climate-indicators/climate-change-indicators-sea-surface-temperature  
+global co2 emission: https://www.climatewatchdata.org/data-explorer/historical-emissions  
+ambient air pollution deaths: https://apps.who.int/gho/data/view.main.BODAMBIENTAIRDTHS  
+natural disasters by type: downloaded from: https://ourworldindata.org/natural-disasters, data provided by http://www.emdat.be/  
+Sea level rise: https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php  
+ice amount: https://climate.nasa.gov/vital-signs/arctic-sea-ice/  
+renewable energy investment: downloaded from: https://ourworldindata.org/energy#investment-in-renewable-technologies, data provided by: http://resourceirena.irena.org/gateway/dashboard/  
+electric car sales: https://www.iea.org/data-and-statistics/charts/global-electric-car-sales-by-key-markets-2015-2020  
+
+
+# Introduction
+In this project, pollution is discussed with an emphasis on air pollution and greenhouse gases that contribute towards global warming.
+I will look at evidence of climate change, its causes, and its affect on the globe. 
+The motivation for this project came when running across this image when surfing the web.
+![](images/Price-of-electricity-new-renewables-vs-new-fossil.png)
+It shows that electricity from solar declined 89% from 2009 to 2019. This sparked an interest in finding out what the worlds primary sources of energy is, and how it has changed over the years.
+This interest developed into finding out how the use of nonrenewable energy affects the globe. As the this project will show, the effects can be found on land, in the sea and on people.
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -24,11 +44,8 @@ library(rvest)
 library(gganimate)
 ```
 
-
-
 ```{r data, include=FALSE}
 emision_by_sector <- read.csv("data/ghg-emissions-by-sector.csv", stringsAsFactors = FALSE)
-primary_energy_sources <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
 global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors = FALSE, skip = 4)
 sea_surface_temp <- read.csv("data/sea-surface-temp.csv", stringsAsFactors = FALSE, skip = 6)
@@ -112,7 +129,6 @@ sea_surface_temp
 df_sea_surface_temp <- sea_surface_temp %>%
   select(Year, Annual.anomaly)
 ```
-
 
 ```{r gloablCoEmission, include=FALSE}
 df_global_co_emission <- global_co_emission %>%
@@ -214,13 +230,17 @@ df_electric_car_sales <- melt(electric_car_sales, id.vars = "X") %>%
 df_electric_car_sales
 ```
 
-
 ```{r plotAstetics, include=FALSE}
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 ```
 
 
+
+
+
+
 <!-- The bad -->
+# Emission
 
 This plot shows how many million tonnes of greenhouse gasses that were released from 1990-2016, measured in the equivalent amount of carbon dioxide that would produce that same amount of energy.
 ```{r echo=FALSE, fig.width=10}
@@ -229,9 +249,10 @@ ggplot(df_emission_by_sector, aes(Year, value, col=variable)) +
   pltTheme +
   geom_line()
 ```
-Electricity seems to be a big contributor to greenhouse gases. Of the `r format(round(total_emission_2016), big.mark=",",scientific=FALSE)` tonnes of greenhouse gases, electricity and heat makes out to be `r format(round((total_electricity_2016/total_emission_2016)*100))`% of the total emission.
+Electricity an heat seems to be a big contributor to greenhouse gases. Of the `r format(round(total_emission_2016), big.mark=",",scientific=FALSE)` tonnes of greenhouse gases, electricity and heat makes out to be `r format(round((total_electricity_2016/total_emission_2016)*100))`% of the total emission.
 
-Let's look at the primary sources of energy the world consumes. This will include energy used by the different sectors in the previous graph. 
+Transport, buildings, industries, electricity and heat all need a source of energy. 
+Let's look at the primary sources of energy the world consumes.
 ```{r echo=FALSE, fig.width=14}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
@@ -268,7 +289,7 @@ plt_temperature_sea <- ggplot(df_sea_surface_temp, aes(x=Year, y=Annual.anomaly)
 
 grid.arrange(plt_emission, plt_temperature_land, plt_temperature_sea, nrow=3)
 ```
-There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between these two variables.
+There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between the rising land temperatures and carbon dioxide emissions. 
 
 Furthermore, ambient air pollution which is pollution from motor vehicles, oil and coal power plants, oil refineries etc. has resulted in `r format(pollution_deaths_2016,big.mark=",",scientific=FALSE)` deaths across the globe in 2016$^{[1][2]}$. Research has also suggested that greenhouse gases has increased the  frequency of natural disasters like hurricanes, floods, storms, droughts and wildfires$^{3}$.
 ```{r echo=FALSE, fig.width=10}
@@ -289,13 +310,10 @@ ggplot(df_arctic_sea_ice, aes(x=year, y=extent)) +
   pltTheme +
   geom_line()
 ```
-
-
-
 https://climate.nasa.gov/vital-signs/arctic-sea-ice/ 
 
 Here is a plot of changing water levels globally, and  for some of the larger oceans in the world. The change is expressed in millimeters and the sea level is thought to be rising by an average of three millimeters a year. 
-```{r echo=FALSE, fig.width=14}
+```{r echo=FALSE, fig.width=14, message=FALSE, warning=FALSE}
 ggplot(data=df_sea_level_rise_regional, aes(x=year, y=value, color=variable)) +
   geom_line(data=df_sea_level_rise_global) +
   geom_line() +
@@ -309,7 +327,11 @@ Altimetry data are provided by the NOAA Laboratory for Satellite Altimetry.
 
 <!-- The good -->
 
-Dividing the renewable sources from the nonrenewable sources, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
+The world is taking steps towards reducing our carbon footprint. The Paris agreement is an effort to reduce global greenhouse emissions and has set a goal that the global temperature will not exeed 2 degrees Celsius by the year 2100 or at best case 1.5 degrees Celcius.
+This primarily means that the use of fossil fuels has to decline and be replaced by renewable sources. 
+
+# Preventing increased pollution
+Dividing the renewable sources from the nonrenewable sources in the previous energy sources plot, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
 ```{r plotNonVsRenew, echo=FALSE, fig.width=14}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
