@@ -1,4 +1,4 @@
----
+  ---
 title: "Energy"
 author: "Sondre Løvås"
 date: "26 11 2020"
@@ -547,7 +547,7 @@ grid.arrange(plt_2.0C, plt_1.5C, nrow=2)
 ```
 
 Analysis has estimated that with no climate policies implemented, the global temperature would rise to 4.1°C in 2100$^{[4]}$.
-Luckily the world is taking action and with current policies the temperature anomaly will hopefully stay under 3°C. 
+Luckily the world is taking action and with current policies the temperature anomaly will hopefully stay under 3°C. To aid with this goal, more extensive use of nuclear energy is thought to be a good substitution to especially nonrenewable sources. Nuclear has low greenhouse gas emissions while it also preserves our nature from massive solar and wind farms.
 
 ## Sources  
 Global temperature anomaly
