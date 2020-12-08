@@ -8,16 +8,19 @@ output: html_document
 
 <!-- DATA SOURCES
 Emission by sector: https://www.climatewatchdata.org/data-explorer/historical-emissions  
-Primary energy sources: https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html  
+Primary energy: downloaded from https://ourworldindata.org/energy#how-much-energy-does-the-world-consume, data provided by https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html 
+Primary energy by source: downloaded from https://ourworldindata.org/energy#energy-consumption-by-source, data provided by https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html
 sea surface temperature: https://www.epa.gov/climate-indicators/climate-change-indicators-sea-surface-temperature  
 global co2 emission: https://www.climatewatchdata.org/data-explorer/historical-emissions  
 ambient air pollution deaths: https://apps.who.int/gho/data/view.main.BODAMBIENTAIRDTHS  
-natural disasters by type: downloaded from: https://ourworldindata.org/natural-disasters, data provided by http://www.emdat.be/  
+natural disasters by type: downloaded from https://ourworldindata.org/natural-disasters, data provided by http://www.emdat.be/  
 Sea level rise: https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php  
 ice amount: https://climate.nasa.gov/vital-signs/arctic-sea-ice/  
-renewable energy investment: downloaded from: https://ourworldindata.org/energy#investment-in-renewable-technologies, data provided by: http://resourceirena.irena.org/gateway/dashboard/  
+renewable energy investment: downloaded from https://ourworldindata.org/energy#investment-in-renewable-technologies, data provided by http://resourceirena.irena.org/gateway/dashboard/  
 electric car sales: https://www.iea.org/data-and-statistics/charts/global-electric-car-sales-by-key-markets-2015-2020  
 Co2 mitigation 1.5 and 2 degrees Celcius: https://folk.universitetetioslo.no/roberan/t/global_mitigation_curves.shtml  
+Death rates from energy source: https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you  
+Electricity prices: https://appsso.eurostat.ec.europa.eu/nui/submitViewTableAction.do
 -->
 
 # Introduction
@@ -48,6 +51,7 @@ library(RColorBrewer)
 ```{r data, include=FALSE}
 emision_by_sector <- read.csv("data/ghg-emissions-by-sector.csv", stringsAsFactors = FALSE)
 global_primary_energy <- read.csv("data/global-primary-energy.csv", stringsAsFactors = FALSE)
+primary_energy_by_source <- read.csv("data/primary-energy-consumption-by-source.csv", stringsAsFactors = FALSE)
 global_temp_anomaly <- read.csv("data/temperature-anomaly.csv", stringsAsFactors = FALSE, skip = 4)
 sea_surface_temp <- read.csv("data/sea-surface-temp.csv", stringsAsFactors = FALSE, skip = 6)
 global_co_emission <- read.csv("data/annual-co-emissions-by-region.csv")
@@ -59,6 +63,8 @@ renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", 
 electric_car_sales <- read.csv("data/global-electric-car-sales-by-key-markets-2010-2020.csv", stringsAsFactors = FALSE, skip = 3)
 mitigation_curves_2.0C <- read.csv("data/mitigation_curves_2.0C.csv", stringsAsFactors = FALSE)
 mitigation_curves_1.5C <- read.csv("data/mitigation_curves_1.5C.csv", stringsAsFactors = FALSE)
+electricity_price_france <- read.csv("data/electricity-price-france.csv", stringsAsFactors = FALSE)
+electricity_price_germany <- read.csv("data/electricity-price-germany.csv", stringsAsFactors = FALSE)
 ```
 
 ```{r include=FALSE}
@@ -90,7 +96,7 @@ total_electricity_2016 <- df_emission_by_sector %>%
   summarize(Total_Electricity=sum(value, na.rm = TRUE))
 ```
 
-```{r globalEnergySources, include=FALSE}
+```{r globalEnergySources}
 df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # Melt data frame such that all sources are in one column.
   filter(Year >= 1965) %>%
   mutate(variable =
@@ -113,7 +119,7 @@ df_global_primary_nonrenew <- df_global_primary_energy %>%
 
 # Extract renewable sources.
 df_global_primary_renew <- df_global_primary_energy %>%
-  filter(variable == c("Hydropower", "Solar", "nuclear"," Other renewables", "Wind"))
+  filter(variable == c("Hydropower", "Solar", "nuclear"," Other renewables", "Wind", "Nuclear"))
 ```
 
 ```{r renewableEnergyInvestment, include=FALSE}
@@ -172,7 +178,7 @@ webpage <- read_html(sea_level_URL)
 
 desired_oceans <- c("Pacific Ocean", "Atlantic Ocean", "Indian Ocean")
 
-j <- 0
+i <- 0
 #Scrape csv file names and download them.
 for (i in 4:27) {
   ocean_name_node <- sprintf("#list2 tr:nth-child(%s) th", i)
@@ -192,7 +198,6 @@ for (i in 4:27) {
 # Get average change in selected oceans.
 get_ocean_data <- function(oceans) {
   df_sea_level_rise_regional <- NULL
-  i <- 0
   for (ocean in oceans) {
     file_path <- paste("data/regional-sea-level/", ocean, ".csv", sep="")
     file <- read.csv(file_path, stringsAsFactors = FALSE, skip = 5)
@@ -217,7 +222,7 @@ oceans <- c("Pacific-Ocean", "Atlantic-Ocean", "Indian-Ocean")
 df_sea_level_by_ocean <- get_ocean_data(oceans)
 ```
 
-```{r include=FALSE}
+```{r arcticSeaIce, include=FALSE}
 df_arctic_sea_ice <- ice_amount %>%
   select(c(year, extent))
 
@@ -225,7 +230,7 @@ mean_ice_melt <- df_arctic_sea_ice %>%
   summarise(avg_change = mean(c(NA, diff(extent)), na.rm = TRUE))
 ```
 
-```{r include=FALSE}
+```{r electricCarSales, include=FALSE}
 electric_car_sales
 electric_car_sales <- electric_car_sales %>%
   select(c("X", "Market.Share"))
@@ -239,7 +244,7 @@ df_electric_car_sales <- melt(electric_car_sales, id.vars = "X") %>%
 df_electric_car_sales
 ```
 
-```{r include=FALSE}
+```{r mitigationCurves, include=FALSE}
 df_mitigation_curves_2.0C_hist <- melt(mitigation_curves_2.0C, id.vars = "Year") %>%
   filter(Year >= 1980, variable == "Historical")
 
@@ -253,6 +258,73 @@ df_mitigation_curves_1.5C_exclud <- melt(mitigation_curves_1.5C, id.vars = "Year
   filter(Year >= 1980, variable != "Historical")
 ```
 
+```{r deathsBySorce, include=FALSE}
+# Scrape table from website.
+URL <- "https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you"
+webpage <- read_html(URL)
+result <- NULL
+i <- 0
+
+for (i in 1:7) {
+  source_node <- sprintf("tr:nth-child(%s) td:nth-child(1)", i)
+  source_name <- webpage %>% html_nodes(source_node) %>% html_text() # Energy source value
+  death_node <- sprintf("tr:nth-child(%s) td:nth-child(2)", i)
+  death_num <- webpage %>% html_nodes(death_node) %>% html_text() # Deaths by source
+  result <- rbind(result, c(source_name, death_num))
+}
+
+df_deaths_by_source <- as.data.frame(result, stringsAsFactors = FALSE) %>% 
+  rename("Source" = V1, "Deaths_Per_1000_TWh" = V2) %>%
+  mutate(Deaths_Per_1000_TWh = as.numeric(gsub(",", "", Deaths_Per_1000_TWh)))
+df_deaths_by_source
+```
+
+```{r}
+electricity_price_france
+df_electricity_price_france <- electricity_price_france %>%
+  select(TIME, Value)
+
+df_electricity_price_germany <- electricity_price_germany %>%
+  select(TIME, Value)
+```
+
+```{r}
+primary_energy_by_source
+
+renewable_consumption_by_country <- function(country) {
+  df_primary_energy_by_source <- primary_energy_by_source %>%
+  filter(Year >= 1980 & Entity == country) %>%
+  select(!c(Entity, Code))
+
+
+  df_primary_energy_by_source <- melt(df_primary_energy_by_source, id.vars = "Year") %>%
+    mutate(variable =
+             recode(variable,
+                    "Hydro.Generation...TWh" = "Hydro",
+                    "Nuclear.Generation...TWh" = "Nuclear",
+                    "Solar.Generation...TWh" = "Solar",
+                    "Wind.Generation..TWh" = "Wind")) %>%
+    filter(variable == c("Hydro", "Nuclear", "Solar", "Wind"))
+  
+  return(df_primary_energy_by_source)
+}
+
+df_primary_energy_by_source_GR <- renewable_consumption_by_country("Germany")
+df_primary_energy_by_source_FR <- renewable_consumption_by_country("France")
+```
+
+```{r}
+ggplot(df_primary_energy_by_source_GR, aes(x=Year, y=value, colour=variable)) +
+  geom_line()
+```
+```{r}
+ggplot(df_primary_energy_by_source_FR, aes(x=Year, y=value, colour=variable)) +
+  geom_line()
+```
+
+
+
+
 ```{r plotAstetics, include=FALSE}
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 ```
@@ -263,7 +335,7 @@ pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 
 
 <!-- The bad -->
-# Emission
+# Emission causes and effects
 
 This plot shows how many million tonnes of greenhouse gasses that were released from 1990-2016, measured in the equivalent amount of carbon dioxide that would produce that same amount of energy.
 
@@ -322,7 +394,7 @@ There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_global_temp_an
 Furthermore, ambient air pollution which is pollution from motor vehicles, oil and coal power plants, oil refineries etc. has resulted in `r format(pollution_deaths_2016,big.mark=",",scientific=FALSE)` deaths across the globe in 2016$^{[1][2]}$. Research has also suggested that greenhouse gases has increased the  frequency of natural disasters like hurricanes, floods, storms, droughts and wildfires$^{[3]}$.
 
 ```{r echo=FALSE, fig.width=10, fig.align="center"}
-ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, color=Entity)) +
+ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, fill=Entity)) +
   labs(y="Value", title="Number of natural disasters.") +
   geom_col() +
   pltTheme +
@@ -358,7 +430,7 @@ Altimetry data are provided by the NOAA Laboratory for Satellite Altimetry.
 
 <!-- The good -->
 
-The world is taking steps towards reducing our carbon footprint. The Paris agreement is an effort to reduce global greenhouse emissions and has set a goal that the global temperature will not exeed 2 degrees Celsius by the year 2100 or at best case 1.5 degrees Celcius.
+The world is taking steps towards reducing our carbon footprint. The Paris agreement is an effort to reduce global greenhouse emissions and has set a goal that the global temperature will not exceed 2 degrees Celsius by the year 2100 or at best case 1.5 degrees Celsius.
 This primarily means that the use of fossil fuels has to decline and be replaced by renewable sources. 
 
 # Preventing increased pollution
@@ -378,7 +450,20 @@ plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable
 grid.arrange(plt_renew, plt_nonrenew, ncol=2)
 ```
 
-This is partly an effect of greater investment in renewable energy sources.
+Here, nuclear energy has been chosen to be added to the renewable sources. This is because research shows it is far safer than any nonrenewable sources and is close to being as safe as any of the other renewable sources on this graph.
+As the next chart shows, deaths because of nuclear energy is surprisingly low.
+
+```{r, echo=FALSE, fig.width=8, fig.align="center"}
+ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Source)) + 
+  labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source")+
+  pltTheme +
+  theme(legend.position = 0) +
+  geom_col()
+```
+
+additionally, the CO2 emissions from nuclear energy is very low, even lower than energy for wind and from photovoltaic sources
+
+The rise in renewable energy sources is partly an effect of greater investment in renewable energy sources$^{[5]}$.
 
 ```{r echo=FALSE, fig.width=14, fig.align="center"}
 ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) + 
@@ -435,3 +520,4 @@ https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/ytd/12/1880-20
 [2].https://apps.who.int/gho/data/node.main.BODAMBIENTAIRDTHS?lang=en WHO Deaths caused by ambient air pollution  
 [3].Anderson, Jason, and Camilla Bausch. "Climate Change and Natural Disasters: Scientific evidence of a possible relation between recent natural disasters and climate change." Policy Department Economic and Scientific Policy 2 (2006).     
 [4].https://climateactiontracker.org/global/temperatures/  
+[5].https://www.giss.nasa.gov/meetings/pollution2002/summaryd.html  
