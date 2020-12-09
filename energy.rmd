@@ -1,8 +1,7 @@
-  ---
+---
 title: "Energy"
 author: "Sondre Løvås"
-date: "26 11 2020"
-output: html_document
+date: "09 12 2020"
 ---
 
 
@@ -17,7 +16,6 @@ natural disasters by type: downloaded from https://ourworldindata.org/natural-di
 Sea level rise: https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php  
 ice amount: https://climate.nasa.gov/vital-signs/arctic-sea-ice/  
 renewable energy investment: downloaded from https://ourworldindata.org/energy#investment-in-renewable-technologies, data provided by http://resourceirena.irena.org/gateway/dashboard/  
-electric car sales: https://www.iea.org/data-and-statistics/charts/global-electric-car-sales-by-key-markets-2015-2020  
 Co2 mitigation 1.5 and 2 degrees Celcius: https://folk.universitetetioslo.no/roberan/t/global_mitigation_curves.shtml  
 Death rates from energy source: https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you  
 Electricity prices: https://ec.europa.eu/eurostat/data/database, filter: Enviroment and energy -> Energy -> Energy statistics -> Energy statistics - natural gas and electricity prices.
@@ -62,19 +60,19 @@ natural_disasters_by_type <- read.csv("data/natural-disasters-by-type.csv", stri
 sea_level_rise <- read.csv("data/sea-level-rise.csv", stringsAsFactors = FALSE, skip = 5)
 ice_amount <-read.csv("data/ice-amount.csv", stringsAsFactors = FALSE)
 renewable_energy_investment <- read.csv("data/renewable-energy-investment.csv", stringsAsFactors = FALSE)
-electric_car_sales <- read.csv("data/global-electric-car-sales-by-key-markets-2010-2020.csv", stringsAsFactors = FALSE, skip = 3)
 mitigation_curves_2.0C <- read.csv("data/mitigation_curves_2.0C.csv", stringsAsFactors = FALSE)
 mitigation_curves_1.5C <- read.csv("data/mitigation_curves_1.5C.csv", stringsAsFactors = FALSE)
 electricity_price_france <- read.csv("data/electricity-price-france.csv", stringsAsFactors = FALSE)
 electricity_price_germany <- read.csv("data/electricity-price-germany.csv", stringsAsFactors = FALSE)
 ```
 
-```{r include=FALSE}
-emision_summarized <- emision_by_sector %>%
-  group_by(Year) %>%
-  summarise_at(vars(Agriculture..GHG.Emissions..CAIT.:Transport..GHG.Emissions..CAIT.), sum, na.rm=TRUE)
+```{r emissionBySEctor, include=FALSE}
+emission_summarized <- emision_by_sector %>%
+  group_by(Year) %>% # Get global emissions by summing emissions from each year.
+  summarise_at(vars(Agriculture..GHG.Emissions..CAIT.:Transport..GHG.Emissions..CAIT.), sum, na.rm=TRUE) 
 
-df_emission_by_sector <- melt(emision_summarized, id.vars = c("Year")) %>%
+# Melt the data frame to get all sectors in one variable. 
+df_emission_by_sector <- melt(emission_summarized, id.vars = c("Year")) %>%
   mutate(variable =
            recode(variable,
                   "Agriculture..GHG.Emissions..CAIT."="Agriculture",
@@ -89,10 +87,12 @@ df_emission_by_sector <- melt(emision_summarized, id.vars = c("Year")) %>%
                   "Other.Fuel.Combustion..GHG.Emissions..CAIT."="Other fuel combustion",
                   "Transport..GHG.Emissions..CAIT."="Transport"))
 
+# Total emissions 2016.
 total_emission_2016 <- df_emission_by_sector %>%
   filter(Year==2016) %>%
   summarize(Totlal_Emission=sum(value, na.rm = TRUE))
 
+# Total emission from electricity and heat in 2016.
 total_electricity_2016 <- df_emission_by_sector %>%
   filter(Year==2016 & variable=="Electricity and Heat") %>%
   summarize(Total_Electricity=sum(value, na.rm = TRUE))
@@ -125,23 +125,26 @@ df_global_primary_renew <- df_global_primary_energy %>%
 ```
 
 ```{r renewableEnergyInvestment, include=FALSE}
+# Investment in renewable energy.
 df_renewable_investment <- renewable_energy_investment %>%
   group_by(Entity) %>%
   rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
 ```
 
 ```{r globalTempAnomaly, include=FALSE}
+# Temperature anomalies since the industrial revolution.
 df_global_temp_anomaly <- global_temp_anomaly %>%
   mutate(Value = replace(Value, Value == -999, NA)) # NA values are represented as -999 in original dataset. 
 ```
 
 ```{r seaLeveLTemp, include=FALSE}
-sea_surface_temp
+# Anomalies in surface temperature since the industrial revolution.
 df_sea_surface_temp <- sea_surface_temp %>%
   select(Year, Annual.anomaly)
 ```
 
 ```{r gloablCoEmission, include=FALSE}
+# Data set contains co2 emissions form each country and a 'world' variable for global co2 emission.
 df_global_co_emission <- global_co_emission %>%
   filter(Entity=="World" & Year >= 1880) %>%
   group_by(Year) %>%
@@ -166,12 +169,11 @@ df_natural_disasters <- natural_disasters_by_type %>%
 df_sea_level_rise_global <- melt(sea_level_rise, id.vars = "year") %>%
   drop_na() %>%
   mutate(Ocean="Global")
-df_sea_level_rise_global
 ```
 
 ```{r regionalSeaLevelScrape, eval=FALSE, include=FALSE}
 # Scrape sea level data. 
-# This chuck will download sea data from https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php,
+# This chunk will download sea data from https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php,
 # and is set to not run. The data up until December 2020 is already found in the 'regional sea level' folder.
 # If more recent data is wanted, set eval to true.
 sea_level_URL <- "https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/LSA_SLR_timeseries.php"
@@ -185,7 +187,10 @@ i <- 0
 for (i in 4:27) {
   ocean_name_node <- sprintf("#list2 tr:nth-child(%s) th", i)
   ocean_name <- webpage %>% html_nodes(ocean_name_node) %>% html_text()
+  # Check if the current ocean is desired.
   if (ocean_name %in% desired_oceans) {
+    # Website's csv files are downloadable through the URL
+    # https://www.star.nesdis.noaa.gov/socd/lsa/SeaLevelRise/FILE_NAME
     ocean_name_nospace <- gsub(" ", "-", ocean_name)
     file_node<- sprintf("#list2 tr:nth-child(%s) th+ td a:nth-child(1)", i)
     file_name <- webpage %>% html_nodes(file_node) %>% html_attr("href")
@@ -227,23 +232,6 @@ df_sea_level_by_ocean <- get_ocean_data(oceans)
 ```{r arcticSeaIce, include=FALSE}
 df_arctic_sea_ice <- ice_amount %>%
   select(c(year, extent))
-
-mean_ice_melt <- df_arctic_sea_ice %>%
-  summarise(avg_change = mean(c(NA, diff(extent)), na.rm = TRUE))
-```
-
-```{r electricCarSales, include=FALSE}
-electric_car_sales
-electric_car_sales <- electric_car_sales %>%
-  select(c("X", "Market.Share"))
-
-df_electric_car_sales <- melt(electric_car_sales, id.vars = "X") %>%
-  rename("Year"="X") %>%
-  filter(Year < 2020) %>%
-  group_by(Year) %>%
-  summarize(Sum_Market_Share=sum(value, na.rm=TRUE))
-
-df_electric_car_sales
 ```
 
 ```{r mitigationCurves, include=FALSE}
@@ -283,27 +271,20 @@ df_deaths_by_source
 
 ```{r include=FALSE}
 # Remove quarter and calculate mean price each year.
-
-df_electricity_price_france <- electricity_price_france %>%
+clean_price_data <- function(data) {
+  df_electricity_price_france <- data %>%
   select(TIME, Value) %>%
   mutate(TIME = gsub("S.*", "", TIME), Value = as.numeric(Value)) %>%
   group_by(TIME) %>%
   summarise(Value = mean(Value, na.rm=TRUE))
+}
 
-
-df_electricity_price_germany <- electricity_price_germany %>%
-  select(TIME, Value) %>%
-  mutate(TIME = gsub("S.*", "", TIME), Value = as.numeric(Value)) %>%
-  group_by(TIME) %>%
-  summarise(Value = mean(Value, na.rm=TRUE))
-
-
-
-df_electricity_price_germany
-df_electricity_price_france
+df_electricity_price_france <- clean_price_data(electricity_price_france)
+df_electricity_price_germany <- clean_price_data(electricity_price_germany)
 ```
 
 ```{r scrapeElectricityPrice, include=FALSE}
+# Scrape countries share of electricity sources.
 scrape_electricity <- function(URL) {
   webpage <- read_html(URL)
   
@@ -332,6 +313,7 @@ scrape_electricity <- function(URL) {
 df_electricity_sources_france <- scrape_electricity("https://www.globalpetrolprices.com/energy_mix.php?countryId=194")
 df_electricity_sources_germany <- scrape_electricity("https://www.globalpetrolprices.com/energy_mix.php?countryId=195")
 
+# Combine coutries into one data frame.
 df_electricity_sources_combined <- cbind(France = df_electricity_sources_france, Germany = df_electricity_sources_germany$Perc_Of_Total) %>%
   rename("Energy_Source" = France.Energy_Source, "France" = France.Perc_Of_Total)
 
@@ -347,7 +329,6 @@ pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 
 
 
-<!-- The bad -->
 # Emission causes and effects
 
 This plot shows how many million tonnes of greenhouse gasses that were released from 1990-2016, measured in the equivalent amount of carbon dioxide that would produce that same amount of energy.
@@ -441,12 +422,14 @@ ggplot(data=df_sea_level_by_ocean, aes(x=year, y=value, color=variable)) +
 ```
 Altimetry data are provided by the NOAA Laboratory for Satellite Altimetry.
 
-<!-- The good -->
 
+
+
+
+# Preventing increased pollution
 The world is taking steps towards reducing our carbon footprint. The Paris agreement is an effort to reduce global greenhouse emissions and has set a goal that the global temperature will not exceed 2 degrees Celsius by the year 2100 or at best case 1.5 degrees Celsius.
 This primarily means that the use of fossil fuels has to decline and be replaced by renewable sources. 
 
-# Preventing increased pollution
 Dividing the renewable sources from the nonrenewable sources in the previous energy sources plot, it can bee seen that renewable energy has been on a heavy rise since around 2005. 
 
 ```{r plotNonVsRenew, echo=FALSE, fig.width=14, fig.align="center"}
@@ -508,18 +491,6 @@ ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) +
   geom_line()
 ```
 
-Returning to emissions by sector, it can be seen that transport is the next highest source of carbon dioxide-equivalent emission. Progress has been made towards shifting to electric, as the sales of electric cars rise every year. Due to environmental reasons, driving an electric car has been given a lot of benefits. In Norway the price of charging an electric car versus using fossil fuel favors the electric car heavily when it comes to cost. Also, taxes and insurance comes cheaper with an electric car.
-
-```{r echo=FALSE, fig.width=10, fig.align="center"}
-ggplot(df_electric_car_sales, aes(x=Year, y=Sum_Market_Share/100)) +
-  pltTheme +
-  scale_y_continuous(labels=percent) +
-  scale_x_continuous(breaks=seq(2010, 2019, 1)) +
-  labs(y="Market share", title="Electric car market share.") +
-  geom_col()
-```
-IEA, Global electric car sales by key markets, 2010-2020, IEA, Paris https://www.iea.org/data-and-statistics/charts/global-electric-car-sales-by-key-markets-2015-2020
-
 # Conclusions
 Decreasing co2 emissions to stay clear of an 2.0 degree Celsius global temperature increase is no small feat, and for 1.5 degrees Celsius, nearly impossible.
 Here it is shown how much co2 emission the world has to drop to stay clear of these temperature increases by what year year we start in.
@@ -549,7 +520,7 @@ grid.arrange(plt_2.0C, plt_1.5C, nrow=2)
 Analysis has estimated that with no climate policies implemented, the global temperature would rise to 4.1°C in 2100$^{[4]}$.
 Luckily the world is taking action and with current policies the temperature anomaly will hopefully stay under 3°C. To aid with this goal, more extensive use of nuclear energy is thought to be a good substitution to especially nonrenewable sources. Nuclear has low greenhouse gas emissions while it also preserves our nature from massive solar and wind farms.
 
-## Sources  
+## References  
 Global temperature anomaly
 https://www.ncdc.noaa.gov/cag/global/time-series/globe/land_ocean/ytd/12/1880-2019  
 [1].https://www.who.int/airpollution/ambient/pollutants/en/ WHO Ambient air pollution  
