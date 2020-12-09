@@ -3,9 +3,9 @@ Greenhouse gas emissions has changed the world, temperatures are rising and natu
 
 # Related Work
 What initially motivated this project was a graph of the massive price decline in solar energy from the last ten years. This created a ripple effect which led to studying pollution from the worlds energy sources. Related work can be found at https://climate.nasa.gov/resources/global-warming-vs-climate-change/.
-
+![alt text](https://github.com/[theriverbank]/[Pollution]/blob/[Master]/images/Price-of-electricity-new-renewables-vs-new-fossil.png?raw=true)
 # Initial Questions
-How our primary energy share by source has changed over the years led to the question of pollution. This led to further questions on how pollution changes the world, what we can do about it and what our future looks like
+How our primary energy share by source has changed over the years led to the question of pollution. This led to further questions on how pollution changes the world, what we can do about it and what our future looks like.
 
 # Data
 Data has been collected from many different sources, primarily through downloadable csv and xlsx files, but also through web scraping when this was not accessible. All sources with links can be found at the top of the markdown and HTML files. 
