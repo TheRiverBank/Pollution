@@ -7,7 +7,7 @@ date: "09 12 2020"
 
 <!-- DATA SOURCES
 Emission by sector: https://www.climatewatchdata.org/data-explorer/historical-emissions  
-Primary energy: downloaded from https://ourworldindata.org/energy#how-much-energy-does-the-world-consume, data provided by https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html 
+Primary energy: downloaded from https://ourworldindata.org/energy, data provided by https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html 
 Primary energy by source: downloaded from https://ourworldindata.org/energy#energy-consumption-by-source, data provided by https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html
 sea surface temperature: https://www.epa.gov/climate-indicators/climate-change-indicators-sea-surface-temperature  
 global co2 emission: https://www.climatewatchdata.org/data-explorer/historical-emissions  
@@ -42,10 +42,9 @@ library(scales)
 library(reshape2)
 library(ggplot2)
 library(gridExtra)
-library(maps)
 library(rvest)
-library(gganimate)
 library(RColorBrewer)
+library(maps)
 ```
 
 ```{r data, include=FALSE}
@@ -64,7 +63,10 @@ mitigation_curves_2.0C <- read.csv("data/mitigation_curves_2.0C.csv", stringsAsF
 mitigation_curves_1.5C <- read.csv("data/mitigation_curves_1.5C.csv", stringsAsFactors = FALSE)
 electricity_price_france <- read.csv("data/electricity-price-france.csv", stringsAsFactors = FALSE)
 electricity_price_germany <- read.csv("data/electricity-price-germany.csv", stringsAsFactors = FALSE)
+renewable_energy_consumption <- read.csv("data/renewable_energy_consumption.csv", stringsAsFactors = FALSE, sep = ";")
 ```
+
+
 
 ```{r emissionBySEctor, include=FALSE}
 emission_summarized <- emision_by_sector %>%
@@ -233,6 +235,33 @@ df_sea_level_by_ocean <- get_ocean_data(oceans)
 df_arctic_sea_ice <- ice_amount %>%
   select(c(year, extent))
 ```
+
+```{r renewableEnergyConsumption}
+df_renewable_energy_consumption <- primary_energy_by_source %>%
+  select(Entity, Year, Geo.Biomass.Other...TWh, Hydro.Generation...TWh, Solar.Generation...TWh, Wind.Generation..TWh) %>%
+  filter(Entity != c("World", "Asia Pacific", "North America", "Europe", "South & Central America")) 
+
+df_renewable_energy_consumption_sum <- melt(df_renewable_energy_consumption, id.vars=c("Entity", "Year")) %>%
+  group_by(Year, Entity) %>%
+  summarize(Sum_Renew = sum(value))
+
+df_renewable_energy_consumption_2019 <- df_renewable_energy_consumption_sum %>%
+  filter(Year==2019) %>%
+  rename("region" = Entity) 
+
+df_renewable_energy_consumption_2019
+```
+
+```{r}
+renewable_energy_consumption
+df_renewable_consumption <- renewable_energy_consumption[1:111, ] %>%
+  select(Exajoules, X2019) %>%
+  drop_na() %>%
+  rename("Region" = Exajoules, "2019" = X2019)
+df_renewable_consumption
+  
+```
+
 
 ```{r mitigationCurves, include=FALSE}
 df_mitigation_curves_2.0C_hist <- melt(mitigation_curves_2.0C, id.vars = "Year") %>%
@@ -490,6 +519,24 @@ ggplot(df_renewable_investment, aes(x=Year, y=Investment, colour=Entity)) +
   pltTheme +
   geom_line()
 ```
+
+Lets take a closer look at which countries produces the most renewable energy, excluding the image of nuclear as a renewable source.
+
+
+
+```{r, fig.width=14}
+test <- df_renewable_energy_consumption_2019 %>% 
+  filter(!region %in% c("Asia Pacific", "Europe", "North America", "World"))
+top_n(test, 5)
+ggplot(top_n(test, 5), aes(x=region, y=Sum_Renew, fill=region)) +
+  geom_col()
+```
+
+
+
+But, due to the size of the population of these countries, renewable energy capacity per capita is quite low. The countries that produce the most renewable energy are not at all the ones that deliver the most renewable energy per capita as the next plot shows. 
+
+
 
 # Conclusions
 Decreasing co2 emissions to stay clear of an 2.0 degree Celsius global temperature increase is no small feat, and for 1.5 degrees Celsius, nearly impossible.
