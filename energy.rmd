@@ -101,6 +101,10 @@ df_emission_by_sector <- melt(emission_summarized, id.vars = c("Year")) %>%
                   "Other.Fuel.Combustion..GHG.Emissions..CAIT."="Other fuel combustion",
                   "Transport..GHG.Emissions..CAIT."="Transport"))
 
+df_arranged <- df_emission_by_sector %>% filter(Year == max(Year)) %>% arrange(desc(value))
+level_arrangement <- as.array(df_arranged$variable)
+df_emission_by_sector$variable <- factor(df_emission_by_sector$variable, levels = level_arrangement)
+
 # Subset emissions for only the year 2016.
 total_emission_2016 <- df_emission_by_sector %>%
   filter(Year==2016) %>%
@@ -130,6 +134,10 @@ df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # 
                   "Biofuels..TWh..direct.energy." = "Biofuels")
          )
 
+df_arranged <- df_global_primary_energy %>% filter(Year == max(Year)) %>% arrange(desc(value))
+level_arrangement <- as.array(df_arranged$variable)
+df_global_primary_energy$variable <- factor(df_global_primary_energy$variable, levels = level_arrangement)
+
 # Subset only nonrenewable sources.
 df_global_primary_nonrenew <- df_global_primary_energy %>%
   filter(variable == c("Coal", "Oil", "Gas"))
@@ -144,6 +152,10 @@ df_global_primary_renew <- df_global_primary_energy %>%
 df_renewable_investment <- renewable_energy_investment %>%
   group_by(Entity) %>%
   rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
+
+df_arranged <- df_renewable_investment %>% filter(Year == max(Year)) %>% arrange(desc(Investment))
+level_arrangement <- as.array(df_arranged$Entity)
+df_renewable_investment$Entity <- factor(df_renewable_investment$Entity, levels = level_arrangement)
 ```
 
 ```{r globalTempAnomaly, include=FALSE}
@@ -314,6 +326,11 @@ for (i in 1:7) {
 df_deaths_by_source <- as.data.frame(result, stringsAsFactors = FALSE) %>% # Turn vector into data frame.
   rename("Source" = V1, "Deaths_Per_1000_TWh" = V2) %>% # Rename columns to make them explanatory.
   mutate(Deaths_Per_1000_TWh = as.numeric(gsub(",", "", Deaths_Per_1000_TWh))) # Replace comma with dot and convert number of deaths to numeric.
+
+df_arranged <- df_deaths_by_source %>% arrange(desc(Deaths_Per_1000_TWh))
+level_arrangement <- as.array(df_arranged$Source)
+df_deaths_by_source$Source <- factor(df_deaths_by_source$Source, levels = level_arrangement)
+
 ```
 
 ```{r include=FALSE}
@@ -373,6 +390,8 @@ df_electricity_sources_combined <- melt(df_electricity_sources_combined, id.vars
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 ```
 
+
+
 # Introduction
 In this project, air pollution from greenhouse gases are discussed.
 The motivation for the project is looking at what energy sources that the people of the world uses, that contributes the most towards global warming.
@@ -383,10 +402,11 @@ Furthermore, it is looked into how nature is affected by global warming, and how
 
 This plot shows how many million tonnes of greenhouse gasses that were released from 1990-2016, measured in the equivalent amount of carbon dioxide that would produce that same amount of energy.
 
+
 ```{r pltEmissionBySector, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_emission_by_sector, aes(Year, value, col=variable)) + 
   labs(y="Million tonnes", title="Emission by sector in million tonnes carbon dioxide-equivalents", colour="Sector") +
-  pltTheme +
+  pltTheme + 
   geom_line()
 ```
 Source: [Climate Watch Data Explorer](https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)
@@ -396,6 +416,7 @@ Electricity an heat seems to be a big contributor to greenhouse gases. Of the `r
 
 Transport, buildings, industries, electricity and heat all need a source of energy. 
 Let's look at the primary sources of energy the world consumes.
+
 
 ```{r pltPrimaryEnergySourcesGlobaly, echo=FALSE, fig.width=14, fig.align="center"}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
@@ -409,6 +430,11 @@ Source: [bp Statistical Review of World Energy](https://www.bp.com/en/global/cor
 As expected, coal, oil and gas are the worlds primary energy sources. The next visualization tries to emphasize in a higher degree.
 
 ```{r pltPrimaryEnergySourcesStack, echo=FALSE, fig.align="center"}
+df_arranged <- df_global_primary_energy %>% filter(Year == max(Year)) %>% arrange(desc(value))
+level_arrangement <- as.array(df_arranged$variable)
+df_global_primary_energy$variable <- factor(df_global_primary_energy$variable, levels = level_arrangement)
+
+
 ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
   labs(y="TWh", title="Global primary energy sources.", colour="Source") +
   pltTheme +
@@ -510,7 +536,7 @@ Source: [bp Statistical Review of World Energy](https://www.bp.com/en/global/cor
 Here, nuclear energy has been chosen to be added to the renewable sources. This is because research shows it is far safer than any nonrenewable sources and is close to being as safe as any of the other renewable sources on this graph.
 As the next chart shows, deaths because of nuclear energy is surprisingly low.
 
-```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.align="center"}
+```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.height=10, fig.align="center"}
 ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Source)) + 
   labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source in 2015.")+
   pltTheme +
