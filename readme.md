@@ -15,7 +15,7 @@ How our primary energy share by source has changed over the years led to the que
 Data has been collected from many different sources, primarily through downloadable csv and xlsx files, but also through web scraping when this was not accessible. All sources with links can be found at the top of the markdown and HTML files. 
 
 # Exploratory Analysis
-In this project, an attempt has been made to select the method of visualization that best fits the data in question. Using a stacked graph to better show majorities, a pie chart to show the share of variables, and overlapping continuous graphs and bar graphs to show differences between variables. Visualization could be improved by including heat maps with animation for both land and ocean.
+In this project, an attempt has been made to select the method of visualization that best fits the data in question. Using a stacked graph to better show majorities, and overlapping continuous graphs and bar graphs to show differences between variables. Visualization could be improved by including heat maps with animation for both land and ocean.
 
 <img src = "images/co2_reduction.PNG" width = 790>
 
