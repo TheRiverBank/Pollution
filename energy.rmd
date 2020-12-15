@@ -523,7 +523,7 @@ Sea surface temperature, [EPA](https://www.epa.gov/climate-indicators/climate-ch
 
 There is a `r format(round(cor(df_global_co_emission$Sum_Year, df_land_temp_anomaly$Value[0:139]), 2), nsmall=2)` correlation between the rising land temperatures and carbon dioxide emissions. Using the temperature levels that were pre industrial revolution, the temperature has today as the plot shows, risen to an anomaly of approximately one degree Celsius.
 
-Furthermore, ambient air pollution which is pollution from motor vehicles, oil and coal power plants, oil refineries etc. has resulted in `r format(pollution_deaths_2016,big.mark=",",scientific=FALSE)` deaths across the globe in 2016$^{[1]}$. Research has also suggested that greenhouse gases has increased the  frequency of natural disasters like hurricanes, floods, storms, droughts and wildfires$^{[2]}$.
+Furthermore, ambient air pollution which is pollution from motor vehicles, oil and coal power plants, oil refineries etc. has resulted in `r format(pollution_deaths_2016,big.mark=",",scientific=FALSE)` deaths across the globe in 2016. Research has also suggested that greenhouse gases has increased the  frequency of natural disasters like hurricanes, floods, storms, droughts and wildfires$^{[1]}$.
 
 ```{r pltNaturalDisasters, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, fill=Entity)) +
@@ -597,7 +597,7 @@ ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Sour
 ```
 Source: [Cambridge House](https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you)
 
-Additionally, the CO2 emissions from nuclear energy is very low, even lower than energy for wind and from photovoltaic sources$^{[3]}$. It even seems like the reliability of nuclear energy makes it cheaper, and in fact, it has one of the highest returns on investment$^{[4]}$. This can be shown by comparing the two neighboring countries France and Germany. Both has made efforts to reduce greenhouse gas emissions by switching to renewable sources, but their electricity prices are very different. 
+Additionally, the CO2 emissions from nuclear energy is very low, even lower than energy for wind and from photovoltaic sources$^{[2]}$. It even seems like the reliability of nuclear energy makes it cheaper, and in fact, it has one of the highest returns on investment$^{[3]}$. This can be shown by comparing the two neighboring countries France and Germany. Both has made efforts to reduce greenhouse gas emissions by switching to renewable sources, but their electricity prices are very different. 
 
 ```{r pltElectricityPriceGrFr, echo=FALSE, fig.width=8, fig.align="center"}
 ggplot() +
@@ -694,12 +694,11 @@ grid.arrange(plt_2.0C, plt_1.5C, nrow=2) # Create a two column plot grid.
 ```
 Source: [CICERO, Robbie Andrew](https://folk.universitetetioslo.no/roberan/t/global_mitigation_curves.shtml)
 
-Analysis has estimated that with no climate policies implemented, the global temperature would rise to 4.1°C in 2100$^{[5]}$.
+Analysis has estimated that with no climate policies implemented, the global temperature would rise to 4.1°C in 2100$^{[4]}$.
 Luckily the world is taking action and with current policies the temperature anomaly will hopefully stay under 3°C. To aid with this goal, more extensive use of nuclear energy is thought to be a good substitution to especially nonrenewable sources. Nuclear has low greenhouse gas emissions while it also preserves our nature from massive solar and wind farms.
 
 ## References  
-[1].[WHO](https://apps.who.int/gho/data/node.main.BODAMBIENTAIRDTHS?lang=en WHO Deaths caused by ambient air pollution)  
-[2].Anderson, Jason, and Camilla Bausch. "Climate Change and Natural Disasters: Scientific evidence of a possible relation between recent natural disasters and climate change." Policy Department Economic and Scientific Policy 2 (2006).     
-[3].[NASA](https://www.giss.nasa.gov/meetings/pollution2002/summaryd.html)  
-[4].[World Nuclear Org](https://www.world-nuclear.org/information-library/energy-and-the-environment/energy-return-on-investment.aspx) table 2.  
-[5].[Climate Action Tracker](https://climateactiontracker.org/global/temperatures/)   
+[1].Anderson, Jason, and Camilla Bausch. "Climate Change and Natural Disasters: Scientific evidence of a possible relation between recent natural disasters and climate change." Policy Department Economic and Scientific Policy 2 (2006).     
+[2].[NASA](https://www.giss.nasa.gov/meetings/pollution2002/summaryd.html)  
+[3].[World Nuclear Org](https://www.world-nuclear.org/information-library/energy-and-the-environment/energy-return-on-investment.aspx) table 2.  
+[4].[Climate Action Tracker](https://climateactiontracker.org/global/temperatures/)   
