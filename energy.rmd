@@ -327,15 +327,14 @@ df_renewable_energy_by_source_2019 <- df_primary_energy_by_source_2019 %>%
   group_by(Region) %>%
   summarise(Sum_Value = sum(value, na.rm = TRUE)) # For each region, sum the renewable sources.
 
-df_renewable_energy_by_source_2019
-
 df_renewable_per_capita <- df_renewable_energy_by_source_2019 %>% 
   # Interesting countries to check renewable energy per capita.
   filter(Region == "China" | Region == "US" | Region == "Germany" | Region == "Finland" | Region == "Sweden")
 
 for (i in 1:5) {
-  # Renewable energy is expressed in TWH
+  # Renewable energy is expressed in TWh.
   # Get renewable energy per capita by first converting the energy to KWh and dividing by the countries population.
+  # Country columns are made sure to be in the same order so the conversion is done by iteration.
   df_renewable_per_capita$Sum_Value[i] = (df_renewable_per_capita$Sum_Value[i] * 10^9) / df_population_selected_countries$value[i]
 }
 ```
@@ -441,7 +440,7 @@ df_electricity_sources_combined <- melt(df_electricity_sources_combined, id.vars
 ```
 
 ```{r plotAstetics, include=FALSE}
-# The theme and text adjustment that will be usd for all graphs.
+# The theme and text adjustment that will be used for all graphs.
 pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 ```
 
