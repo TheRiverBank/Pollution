@@ -637,8 +637,8 @@ ggplot() +
   pltTheme
 ```
 Source: 
-France, [GlobalPertrolPrices](https://www.globalpetrolprices.com/energy_mix.php?countryId=194, data provided by U.S. Energy Information Administration)  
-Germany, [GlobalPertrolPrices](https://www.globalpetrolprices.com/energy_mix.php?countryId=195, data provided by U.S. Energy Information Administration)  
+France, [eia](https://www.eia.gov/)  
+Germany, [eia](https://www.eia.gov/)  
 
 
 The reason for this is thought to be the extended use of nuclear energy in France.
@@ -651,8 +651,8 @@ ggplot(df_electricity_sources_combined, aes(x=Energy_Source, y=value/100, fill=v
   pltTheme
 ```
 Source: 
-France, [GlobalPertrolPrices](https://www.globalpetrolprices.com/energy_mix.php?countryId=194)  
-Germany, [GlobalPertrolPrices](https://www.globalpetrolprices.com/energy_mix.php?countryId=195)  
+France, [eia](https://www.eia.gov/)  
+Germany, [eia](https://www.eia.gov/)  
 
 
 The rise in renewable energy sources is partly an effect of greater investment in renewable energy sources, due to the current climate policies. 
