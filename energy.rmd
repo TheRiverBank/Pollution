@@ -105,7 +105,7 @@ population_selected_countries <- read.csv("data/population-selected-countries.cs
 ```{r emissionBySEctor, include=FALSE}
 emission_summarized <- emision_by_sector %>%
   group_by(Year) %>% # Get global emissions by summing emissions from each year.
-  summarise_at(vars(Agriculture..GHG.Emissions..CAIT.:Transport..GHG.Emissions..CAIT.), sum, na.rm=TRUE) 
+  summarise_at(vars(Agriculture..GHG.Emissions..CAIT. : Transport..GHG.Emissions..CAIT.), sum, na.rm=TRUE) # Sum all countries by year.
 
 # Melt the data frame to get all sectors in one variable. 
 df_emission_by_sector <- melt(emission_summarized, id.vars = c("Year")) %>%
@@ -121,14 +121,11 @@ df_emission_by_sector <- melt(emission_summarized, id.vars = c("Year")) %>%
                   "Fugitive.from.energy.production..GHG.Emissions..CAIT."="Fugitive",
                   "Manufacturing.Construction.energy..GHG.Emissions..CAIT."="Manufacturing and Construction",
                   "Other.Fuel.Combustion..GHG.Emissions..CAIT."="Other fuel combustion",
-                  "Transport..GHG.Emissions..CAIT."="Transport"))
+                  "Transport..GHG.Emissions..CAIT."="Transport")) %>%
+  mutate(variable = fct_reorder(variable, value, tail, n = 1, .desc = TRUE)) # Reorder variables descending.
 
-# Arrange the variables by descending values in the last observations.
-df_arranged <- df_emission_by_sector %>% filter(Year == max(Year)) %>% arrange(desc(value)) # filter last observation and sort values descending.
-level_arrangement <- as.array(df_arranged$variable) # Convert the sorted variables to an array which can be fed to the factor function.
-df_emission_by_sector$variable <- factor(df_emission_by_sector$variable, levels = level_arrangement) # Reorder the variables in the data frame.
 
-# Subset emissions for only the year 2016.
+# Subset emissions for the year 2016.
 total_emission_2016 <- df_emission_by_sector %>%
   filter(Year==2016) %>%
   summarize(Totlal_Emission=sum(value, na.rm = TRUE))
@@ -141,7 +138,7 @@ total_electricity_2016 <- df_emission_by_sector %>%
 
 ```{r globalEnergySources, include=FALSE}
 # Melt the data frame to get all energy sources in one variable.
-df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # Melt data frame such that all sources are in one column.
+df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% 
   filter(Year >= 1965) %>%
   mutate(variable =
            recode(variable, # Rename energy sources to make them more manageable.
@@ -154,13 +151,8 @@ df_global_primary_energy <- melt(global_primary_energy, id.vars = "Year") %>% # 
                   "Other.renewables..TWh..direct.energy."="Other renewables",
                   "Traditional.biomass..TWh..direct.energy."="Biomass",
                   "Wind..TWh..direct.energy."="Wind",
-                  "Biofuels..TWh..direct.energy." = "Biofuels")
-         )
-
-# Arrange the variables by descending values in the last observations.
-df_arranged <- df_global_primary_energy %>% filter(Year == max(Year)) %>% arrange(desc(value)) # filter last observation and sort values descending.
-level_arrangement <- as.array(df_arranged$variable) # Convert the sorted variables to an array which can be fed to the factor function.
-df_global_primary_energy$variable <- factor(df_global_primary_energy$variable, levels = level_arrangement) # Reorder the variables in the data frame.
+                  "Biofuels..TWh..direct.energy." = "Biofuels")) %>%
+  mutate(variable = fct_reorder(variable, value, tail, n = 1, .desc = TRUE)) # Reorder variables descending.
 
 # Subset only nonrenewable sources.
 df_global_primary_nonrenew <- df_global_primary_energy %>%
@@ -174,23 +166,18 @@ df_global_primary_renew <- df_global_primary_energy %>%
 ```{r renewableEnergyInvestment, include=FALSE}
 # Investment in renewable energy.
 df_renewable_investment <- renewable_energy_investment %>%
-  group_by(Entity) %>%
-  rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..")
-
-# Arrange the variables by descending values in the last observations.
-df_arranged <- df_renewable_investment %>% filter(Year == max(Year)) %>% arrange(desc(Investment)) # filter last observation and sort values descending.
-level_arrangement <- as.array(df_arranged$Entity) # Convert the sorted variables to an array which can be fed to the factor function.
-df_renewable_investment$Entity <- factor(df_renewable_investment$Entity, levels = level_arrangement) # Reorder the variables in the data frame.
+  rename("Investment"="Investment.in.Renewables.by.Region..IRENA..2016..") %>%
+  mutate(Entity = fct_reorder(Entity, Investment, tail, n = 1, .desc = TRUE)) # Reorder entities descending.
 ```
 
 ```{r globalTempAnomaly, include=FALSE}
 # Temperature anomalies since the industrial revolution.
 df_land_temp_anomaly <- land_temp_anomaly %>%
-  mutate(Value = replace(Value, Value == -999, NA)) # NA values are represented as -999 in original dataset. 
+  mutate(Value = replace(Value, Value == -999, NA)) # NA values are represented as -999 in original data set. 
 ```
 
 ```{r seaLeveLTemp, include=FALSE}
-# Anomalies in surface temperature since the industrial revolution.
+# Anomalies in sea surface temperature since the industrial revolution.
 df_sea_surface_temp <- sea_surface_temp %>%
   select(Year, Annual.anomaly) # Subset year and annual anomaly.
 ```
@@ -207,7 +194,7 @@ df_global_co_emission <- global_co_emission %>%
 # Variables are represented in the form: median [range].
 pollution_deaths_2016 <- ambient_air_pollution_deaths %>%
   filter(Cause=="Total") %>% # Total is all causes of death summarized. 
-  mutate(Both.sexes=as.numeric(gsub("([0-9]+) .*", "\\1", Both.sexes))) %>% # Only want median value.
+  mutate(Both.sexes=as.numeric(gsub("([0-9]+) .*", "\\1", Both.sexes))) %>% # Only want median value, remove range.
   summarise(Sum_Deaths=sum(Both.sexes, na.rm = TRUE)) # Get total deaths.
 ```
 
@@ -267,6 +254,7 @@ get_ocean_data <- function(oceans) {
       df_sea_level_rise_regional <-  rbind(df_sea_level_rise_regional, df_temp)
     }
   }
+  
   df_sea_level_rise_regional <- df_sea_level_rise_regional %>%
     rename("year"=Average_change.year, "variable"=Average_change.variable, "value"=Average_change.value) 
   
@@ -292,7 +280,7 @@ df_arctic_sea_ice <- ice_amount %>%
   select(c(year, extent)) # Subset year and changes in area.
 ```
 
-```{r include=FALSE}
+```{r population, include=FALSE}
 # The desired order of countries. Order is used to later calculate renewable energy per capita.
 order <- c("China", "Finland", "Germany", "Sweden", "US")
 
@@ -323,7 +311,8 @@ df_primary_energy_by_source_2019 <- melt(df_primary_energy_by_source_2019, id.va
                   "Renew..ables.1" = "Renewables")) %>%
   mutate(value = as.numeric(gsub(",", ".", value))) %>%
   mutate(value = value * 277.78) %>% # Convert exajoules to TWh
-  rename("Region" = Exajoules)  %>% # Remove combined regions and totals.
+  rename("Region" = Exajoules)  %>%
+  # Remove combined regions and totals.
   filter(Region != "Other S. & Cent. America" & 
          Region != "Total S. & Cent. America" &
          Region != "Total North America" &
@@ -340,12 +329,13 @@ df_primary_energy_by_source_2019 <- melt(df_primary_energy_by_source_2019, id.va
          Region != "European Union ") %>%
   drop_na() 
 
+# Subset renewable sources.
 df_renewable_energy_by_source_2019 <- df_primary_energy_by_source_2019 %>%
   filter(variable == c("Hydro_Electric", "Renewables")) %>%
   group_by(Region) %>%
-  summarise(Sum_Value = sum(value, na.rm = TRUE)) # For each region, sum the renewable sources.
-
-
+  summarise(Sum_Value = sum(value, na.rm = TRUE)) %>% # For each region, sum the renewable sources.
+  mutate(Region = fct_reorder(Region, Sum_Value, tail, n = 1, .desc = TRUE)) # Reorder regions descending.
+  
 df_renewable_per_capita <- df_renewable_energy_by_source_2019 %>% 
   # Interesting countries to check renewable energy per capita.
   filter(Region == "China" | Region == "US" | Region == "Germany" | Region == "Finland" | Region == "Sweden")
@@ -357,15 +347,8 @@ for (i in 1:5) {
   df_renewable_per_capita$Sum_Value[i] = (df_renewable_per_capita$Sum_Value[i] * 10^9) / df_population_selected_countries$value[i]
 }
 
-# Arrange renewable energy sources by value.
-df_arranged <- df_renewable_energy_by_source_2019 %>% arrange(desc(Sum_Value)) # Sort values descending.
-level_arrangement <- as.array(df_arranged$Region) # Convert the sorted variables to an array which can be fed to the factor function.
-df_renewable_energy_by_source_2019$Region <- factor(df_renewable_energy_by_source_2019$Region, levels = level_arrangement) # Reorder the variables in the data frame.
-
-# Arrange renewable energy per capita by value
-df_arranged <- df_renewable_per_capita %>% arrange(desc(Sum_Value)) # Sort values descending.
-level_arrangement <- as.array(df_arranged$Region) # Convert the sorted variables to an array which can be fed to the factor function.
-df_renewable_per_capita$Region <- factor(df_renewable_per_capita$Region, levels = level_arrangement) # Reorder the variables in the data frame.
+df_renewable_per_capita <- df_renewable_per_capita %>%
+  mutate(Region = fct_reorder(Region, Sum_Value, tail, n = 1, .desc = TRUE)) # Reorder regions descending.
 ```
 
 ```{r mitigationCurves, include=FALSE}
@@ -407,12 +390,8 @@ for (i in 1:7) {
 
 df_deaths_by_source <- as.data.frame(result, stringsAsFactors = FALSE) %>% # Turn vector into data frame.
   rename("Source" = V1, "Deaths_Per_1000_TWh" = V2) %>% # Rename columns to make them explanatory.
-  mutate(Deaths_Per_1000_TWh = as.numeric(gsub(",", "", Deaths_Per_1000_TWh))) # Replace comma with dot and convert number of deaths to numeric.
-
-# Arrange the variables by descending values in the last observations.
-df_arranged <- df_deaths_by_source %>% arrange(desc(Deaths_Per_1000_TWh)) # Sort values descending.
-level_arrangement <- as.array(df_arranged$Source) # Convert the sorted variables to an array which can be fed to the factor function.
-df_deaths_by_source$Source <- factor(df_deaths_by_source$Source, levels = level_arrangement) # Reorder the variables in the data frame.
+  mutate(Deaths_Per_1000_TWh = as.numeric(gsub(",", "", Deaths_Per_1000_TWh))) %>% # Replace comma with dot and convert number of deaths to numeric.
+  mutate(Source = fct_reorder(Source, Deaths_Per_1000_TWh, tail, n = 1, .desc = TRUE)) # Reorder sources descending.
 
 ```
 
@@ -420,10 +399,10 @@ df_deaths_by_source$Source <- factor(df_deaths_by_source$Source, levels = level_
 # Function to clean electricity prices from the GlobalPetrolPrices website.
 clean_price_data <- function(data) {
   df_electricity_price_france <- data %>%
-  select(TIME, Value) %>% # Want year and quarter expressed as TIME, and value.
-  mutate(TIME = gsub("S.*", "", TIME), Value = as.numeric(Value)) %>% # Remove quarter.
-  group_by(TIME) %>%
-  summarise(Value = mean(Value, na.rm=TRUE)) # With quarter removed, calculate mean each year.
+    select(TIME, Value) %>% # Want year and quarter expressed as TIME, and value.
+    mutate(TIME = gsub("S.*", "", TIME), Value = as.numeric(Value)) %>% # Remove quarter.
+    group_by(TIME) %>%
+    summarise(Value = mean(Value, na.rm=TRUE)) # With quarter removed, calculate mean each year.
 }
 
 df_electricity_price_france <- clean_price_data(electricity_price_france) 
@@ -449,7 +428,8 @@ scrape_electricity <- function(URL) {
   
   df <- as.data.frame(result, stringsAsFactors = FALSE) %>% # Convert the vector into a data frame.
     rename("Energy_Source" = V1, "Perc_Of_Total" = V2) %>% # Rename columns to more explanatory ones.
-    mutate(Perc_Of_Total=as.numeric(Perc_Of_Total)) # Convert the value to numeric
+    mutate(Perc_Of_Total=as.numeric(Perc_Of_Total)) %>% # Convert the value to numeric
+    mutate(Energy_Source = fct_reorder(Energy_Source, Perc_Of_Total, tail, n = 1, .desc = TRUE)) # Reorder variables descending.
   
   return(df)
 }
@@ -488,7 +468,7 @@ This graph shows how many million tonnes of greenhouse gasses that were released
 
 ```{r pltEmissionBySector, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_emission_by_sector, aes(Year, value, col=variable)) + 
-  labs(y="Million tonnes Co2", title="Emission by sector in million tonnes carbon dioxide-equivalents", colour="Sector") +
+  labs(y=expression(CO[2]*e), title="Emission by sector in million tonnes carbon dioxide-equivalents", colour="Sector") +
   pltTheme + 
   geom_line()
 ```
@@ -527,7 +507,7 @@ Under is a visualization of rising temperatures on both land and sea surface, an
 ```{r pltEmissionAndTemp, echo=FALSE, fig.width=14, fig.width=10, fig.height=10, fig.align="center"}
 plt_emission <- ggplot(df_global_co_emission, aes(x=Year, y=Sum_Year)) +
   geom_line(color="red") +
-  labs(y="Milion tonnes Co2", title="Co2 emission") +
+  labs(y=expression(CO[2]), title="Emission million tonnes") +
   scale_x_continuous(breaks = seq(min(df_global_co_emission$Year), max(df_global_co_emission$Year), by = 15)) +
   pltTheme
 
@@ -546,7 +526,7 @@ plt_temperature_sea <- ggplot(df_sea_surface_temp, aes(x=Year, y=Annual.anomaly)
 grid.arrange(plt_emission, plt_temperature_land, plt_temperature_sea, nrow=3) # Create a three row plot grid.
 ```
 Source:  
-Co2, [Climate Watch](https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)     
+CO[2], [Climate Watch](https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)     
 Land temperature, [NOAA](https://www.ncdc.noaa.gov/cag/global/time-series/globe/land/ytd/12/1880-2019)  
 Sea surface temperature, [EPA](https://www.epa.gov/climate-indicators/climate-change-indicators-sea-surface-temperature)  
 
@@ -565,7 +545,7 @@ ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, fill=Entity)) +
 Source: [EM-DAT](https://www.emdat.be/)
 
 Floods could be linked to rising sea levels which again is caused by melting ice.
-This plot shows the rate at which ice is depleting from the arctic.
+This graph shows changes in ice area in the Arctic.
 
 ```{r pltArcticIce, echo=FALSE, fig.align="center"}
 ggplot(df_arctic_sea_ice, aes(x=year, y=extent)) +
@@ -617,7 +597,7 @@ Source: [bp Statistical Review of World Energy](https://www.bp.com/en/global/cor
 Here, nuclear energy has been chosen to be added to the renewable sources. This is because research shows it is far safer than any nonrenewable sources and is close to being as safe as any of the other renewable sources on this graph.
 As the next chart shows, deaths because of nuclear energy is surprisingly low.
 
-```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.height=10, fig.align="center"}
+```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.height=7, fig.align="center"}
 ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Source)) + 
   labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source in 2015.")+
   pltTheme +
@@ -626,7 +606,7 @@ ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Sour
 ```
 Source: [Cambridge House](https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you)
 
-Additionally, the CO2 emissions from nuclear energy is very low, even lower than energy for wind and from photovoltaic sources$^{[2]}$. It even seems like the reliability of nuclear energy makes it cheaper, and in fact, it has one of the highest returns on investment$^{[3]}$. This can be shown by comparing the two neighboring countries France and Germany. Both has made efforts to reduce greenhouse gas emissions by switching to renewable sources, but their electricity prices are very different. 
+Additionally, the CO~2~ emissions from nuclear energy are very low, even lower than energy from wind and from photovoltaic sources$^{[2]}$. It even seems like the reliability of nuclear energy makes it cheaper, and in fact, it has one of the highest returns on investment$^{[3]}$. This can be shown by comparing the two neighboring countries France and Germany. Both has made efforts to reduce greenhouse gas emissions by switching to renewable sources, but their electricity prices are very different. 
 
 ```{r pltElectricityPriceGrFr, echo=FALSE, fig.width=8, fig.align="center"}
 ggplot() +
@@ -636,7 +616,7 @@ ggplot() +
   scale_y_continuous(labels = dollar_format(suffix = " €", prefix = "")) +
   pltTheme
 ```
-Source: 
+Source:  
 France, [eia](https://www.eia.gov/)  
 Germany, [eia](https://www.eia.gov/)  
 
@@ -673,7 +653,7 @@ df_renewable_energy_by_source_2019_top <- top_n(df_renewable_energy_by_source_20
 
 ggplot(df_renewable_energy_by_source_2019_top, aes(x=Region, y=Sum_Value, fill=ifelse(Region=="China" | Region == "US", "blue", "red"))) +
   geom_col() +
-  labs(y="TWh", title="Consumption of renewable energy in 2019") +
+  labs(y="TWh", title="Consumption of renewable energy 2019") +
   pltTheme +
   theme(legend.position = "none")
 ```
@@ -692,12 +672,12 @@ Source:
 Renewable energy, [bp Statistical Review of World Energy](https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html)  
 Population, [The World Bank, DataBank](https://databank.worldbank.org/reports.aspx?source=2&series=SP.POP.TOTL&country=#)  
 
-As we can see, the larger countries must start investing much more into renewable sources to compensate for their large population.
+As we can see, the larger countries must start investing much more into renewable sources to compensate for their large population sizes.
 
 
 # Conclusions
-Decreasing co2 emissions to stay clear of an 2.0 degree Celsius global temperature increase is no small feat, and for 1.5 degrees Celsius, nearly impossible.
-Here it is shown how much co2 emission the world has to drop to stay clear of these temperature increases by what year year we start in.
+Decreasing CO~2~ emissions to stay clear of an 2.0 degree Celsius global temperature increase is no small feat, and for 1.5 degrees Celsius, nearly impossible.
+Here it is shown how much CO~2~ emission the world has to drop to stay clear of these temperature increases by what year year we start in.
 
 ```{r pltMitigationCurves, echo=FALSE, fig.width=14, fig.height=15, fig.align="center", message=FALSE, warning=FALSE}
 ncols = 30 # 30 columns
@@ -708,7 +688,7 @@ plt_2.0C <- ggplot(df_mitigation_curves_2.0C_exclud, aes(x=Year, y=value, color=
   pltTheme +
   theme(legend.position = 0) +
   scale_color_manual(values=colors) +
-  labs(y="Billion tonnes", title="CO2 reduction needed to stay under 2,0°C") +
+  labs(y="Billion tonnes", title=expression(CO[2] * " reduction needed to stay under 2,0°C")) +
   geom_line()
 
 plt_1.5C <- ggplot(df_mitigation_curves_1.5C_exclud, aes(x=Year, y=value, color=variable)) +
@@ -716,7 +696,7 @@ plt_1.5C <- ggplot(df_mitigation_curves_1.5C_exclud, aes(x=Year, y=value, color=
   pltTheme +
   theme(legend.position = 0) +
   scale_color_manual(values=colors) +
-  labs(y="Billion tonnes", title="CO2 reduction needed to stay under 1,5°C") +
+  labs(y="Billion tonnes", title=expression(CO[2] * " reduction needed to stay under 1,5°C")) +
   geom_line()
 
 grid.arrange(plt_2.0C, plt_1.5C, nrow=2) # Create a two column plot grid.
