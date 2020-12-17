@@ -601,7 +601,7 @@ Dividing the renewable sources from the nonrenewable sources in the previous ene
 
 ```{r pltNonVsRenew, echo=FALSE, fig.width=14, fig.align="center"}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
-  labs(y="TWh", title="comsumption of renewable energy.", colour="Renewable sources") + 
+  labs(y="TWh", title="Comsumption of renewable energy.", colour="Renewable sources") + 
   pltTheme +
   geom_line()
 
