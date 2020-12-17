@@ -1,7 +1,7 @@
 ---
 title: "Pollution"
 author: "Sondre Løvås"
-date: "15 12 2020"
+date: "17 12 2020"
 ---
 
 
@@ -533,13 +533,13 @@ plt_emission <- ggplot(df_global_co_emission, aes(x=Year, y=Sum_Year)) +
 
 plt_temperature_land <- ggplot(df_land_temp_anomaly, aes(x=Year, y=Value)) +
   geom_line(color="blue") +
-  labs(y="Temperature anomaly", title="Land temperature") +
+  labs(y="Temperature anomaly °C", title="Land temperature") +
   scale_x_continuous(breaks = seq(min(df_global_co_emission$Year), max(df_global_co_emission$Year), by = 15)) +
   pltTheme
 
 plt_temperature_sea <- ggplot(df_sea_surface_temp, aes(x=Year, y=Annual.anomaly)) +
   geom_line(color="green") +
-  labs(y="Temperature anomaly", title="Sea surface temperature") +
+  labs(y="Temperature anomaly °C", title="Sea surface temperature") +
   scale_x_continuous(breaks = seq(min(df_global_co_emission$Year), max(df_global_co_emission$Year), by = 15)) +
   pltTheme
 
