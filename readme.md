@@ -12,7 +12,7 @@ How our primary energy share by source has changed over the years led to the que
 <img src = "images/co2_emission_and_temp.PNG" width = 900>
 
 # Data
-Data has been collected from many different sources, primarily through downloadable csv and xlsx files, but also through web scraping when this was not accessible. All sources with links can be found at the top of the markdown and HTML files. 
+Data has been collected from many different sources, primarily through downloadable csv and xlsx files, but also through web scraping when this was not accessible. All sources with links can be found at the top of the markdown file.  
 
 # Exploratory Analysis
 In this project, an attempt has been made to select the method of visualization that best fits the data in question. Using a stacked graph to better show majorities, and overlapping continuous graphs and bar graphs to show differences between variables. Visualization could be improved by including heat maps with animation for both land and ocean.
