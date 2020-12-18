@@ -65,6 +65,12 @@ https://www.globalpetrolprices.com/energy_mix.php?countryId=195, data provided b
 -->
 
 
+# Introduction
+In this project, air pollution from greenhouse gases are discussed.
+The motivation for the project is looking at what energy sources that the people of the world uses, that contributes the most towards global warming.
+Furthermore, it is looked into how nature is affected by global warming, and how decarbonization is evolving.
+
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -247,12 +253,14 @@ get_ocean_data <- function(oceans) {
     file_path <- paste("data/regional-sea-level/", ocean, ".csv", sep="") # Fetch the csv file by concatenating the directory and ocean name with the csv extension.
     file <- read.csv(file_path, stringsAsFactors = FALSE, skip = 5)
     average_sea_level_change <- melt(file, id.vars = "year") # Melt observations into one variable.
+    
     if (is.null(df_sea_level_rise_regional)) { # If the data frame is not yet initialized, create it.
       df_sea_level_rise_regional <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
     } else { # If the data frame is initialized, add observations to it.
       df_temp <- data.frame(Ocean=ocean, Average_change=average_sea_level_change)
       df_sea_level_rise_regional <-  rbind(df_sea_level_rise_regional, df_temp)
     }
+    
   }
   
   df_sea_level_rise_regional <- df_sea_level_rise_regional %>%
@@ -310,7 +318,7 @@ df_primary_energy_by_source_2019 <- melt(df_primary_energy_by_source_2019, id.va
                   "Hydro.electric.1" = "Hydro_Electric",
                   "Renew..ables.1" = "Renewables")) %>%
   mutate(value = as.numeric(gsub(",", ".", value))) %>%
-  mutate(value = value * 277.78) %>% # Convert exajoules to TWh
+  mutate(value = value * 277.78) %>% # Convert exajoules to TWh (1EJ = 277.78TWh)
   rename("Region" = Exajoules)  %>%
   # Remove combined regions and totals.
   filter(Region != "Other S. & Cent. America" & 
@@ -455,10 +463,6 @@ pltTheme <- theme_light() + theme(plot.title = element_text(hjust = 0.5))
 
 
 
-# Introduction
-In this project, air pollution from greenhouse gases are discussed.
-The motivation for the project is looking at what energy sources that the people of the world uses, that contributes the most towards global warming.
-Furthermore, it is looked into how nature is affected by global warming, and how decarbonization is evolving.
 
 
 # Emission causes and effects
@@ -483,7 +487,7 @@ Let's look at the primary sources of energy the world consumes.
 
 ```{r pltPrimaryEnergySourcesGlobaly, echo=FALSE, fig.width=14, fig.align="center"}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
-  labs(y="TWh", title="Global primary energy sources.", colour="Source") +
+  labs(y="TWh", title="Global primary energy sources", colour="Source") +
   pltTheme +
   geom_line()
 ```
@@ -494,7 +498,7 @@ As expected, coal, oil and gas are the worlds primary energy sources. The next v
 
 ```{r pltPrimaryEnergySourcesStack, echo=FALSE, fig.align="center"}
 ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
-  labs(y="TWh", title="Global primary energy sources.", colour="Source") +
+  labs(y="TWh", title="Global primary energy sources", colour="Source") +
   pltTheme +
   geom_area(position = "stack") 
 ```
@@ -536,7 +540,7 @@ Furthermore, ambient air pollution which is pollution from motor vehicles, oil a
 
 ```{r pltNaturalDisasters, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_natural_disasters, aes(x=Year, y=Num_Disasters, fill=Entity)) +
-  labs(y="Value", title="Number of natural disasters.") +
+  labs(y="Value", title="Number of natural disasters") +
   geom_col() +
   pltTheme +
   theme(legend.position = "none") +
@@ -562,7 +566,7 @@ ggplot(data=df_sea_level_by_ocean, aes(x=year, y=value, color=variable)) +
   geom_line(data=df_sea_level_rise_global) +
   geom_line() +
   geom_smooth() +
-  labs(y="Millimeters", title="Change is sea level.", colour="Altimeter") +
+  labs(y="Millimeters", title="Change is sea level", colour="Altimeter") +
   scale_x_continuous(breaks = seq(1992, 2020, by=5)) +
   pltTheme +
   facet_wrap(~Ocean)
@@ -581,12 +585,12 @@ Dividing the renewable sources from the nonrenewable sources in the previous ene
 
 ```{r pltNonVsRenew, echo=FALSE, fig.width=14, fig.align="center"}
 plt_renew <- ggplot(df_global_primary_renew, aes(Year, value, col=variable)) + 
-  labs(y="TWh", title="Comsumption of renewable energy.", colour="Renewable sources") + 
+  labs(y="TWh", title="Comsumption of renewable energy", colour="Renewable sources") + 
   pltTheme +
   geom_line()
 
 plt_nonrenew <- ggplot(df_global_primary_nonrenew, aes(Year, value, col=variable)) +
-  labs(y="TWh", title="Consumption of nonrenewable energy.", color="Nonrenewable sources") +
+  labs(y="TWh", title="Consumption of nonrenewable energy", color="Nonrenewable sources") +
   pltTheme +
   geom_line()
 
@@ -599,7 +603,7 @@ As the next chart shows, deaths because of nuclear energy is surprisingly low.
 
 ```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.height=7, fig.align="center"}
 ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Source)) + 
-  labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source in 2015.")+
+  labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source in 2015")+
   pltTheme +
   theme(legend.position = 0) +
   geom_col()
