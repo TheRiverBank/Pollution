@@ -530,7 +530,7 @@ plt_temperature_sea <- ggplot(df_sea_surface_temp, aes(x=Year, y=Annual.anomaly)
 grid.arrange(plt_emission, plt_temperature_land, plt_temperature_sea, nrow=3) # Create a three row plot grid.
 ```
 Source:  
-CO[2], [Climate Watch](https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)     
+CO~2~, [Climate Watch](https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=cait&historical-emissions-gases=all-ghg&historical-emissions-regions=All%20Selected&historical-emissions-sectors=total-including-lucf&page=1)     
 Land temperature, [NOAA](https://www.ncdc.noaa.gov/cag/global/time-series/globe/land/ytd/12/1880-2019)  
 Sea surface temperature, [EPA](https://www.epa.gov/climate-indicators/climate-change-indicators-sea-surface-temperature)  
 
