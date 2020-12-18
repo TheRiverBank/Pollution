@@ -621,9 +621,8 @@ ggplot() +
   scale_y_continuous(labels = dollar_format(suffix = " €", prefix = "")) +
   pltTheme
 ```
-Source:  
-France, [eia](https://www.eia.gov/)  
-Germany, [eia](https://www.eia.gov/)  
+Source: [eia](https://www.eia.gov/)  
+
 
 
 The reason for this is thought to be the extended use of nuclear energy in France.
@@ -635,9 +634,7 @@ ggplot(df_electricity_sources_combined, aes(x=Energy_Source, y=value/100, fill=v
   scale_y_continuous(labels=percent) +
   pltTheme
 ```
-Source: 
-France, [eia](https://www.eia.gov/)  
-Germany, [eia](https://www.eia.gov/)  
+Source: [eia](https://www.eia.gov/)  
 
 
 The rise in renewable energy sources is partly an effect of greater investment in renewable energy sources, due to the current climate policies. 
