@@ -485,7 +485,7 @@ Transport, buildings, industries, electricity and heat all need a source of ener
 Let's look at the primary sources of energy the world consumes.
 
 
-```{r pltPrimaryEnergySourcesGlobaly, echo=FALSE, fig.width=14, fig.align="center"}
+```{r pltPrimaryEnergySourcesGlobaly, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_global_primary_energy, aes(Year, value, col=variable)) + 
   labs(y="TWh", title="Global primary energy sources", colour="Source") +
   pltTheme +
@@ -494,9 +494,9 @@ ggplot(df_global_primary_energy, aes(Year, value, col=variable)) +
 Source: [bp Statistical Review of World Energy](https://www.bp.com/en/global/corporate/energy-economics/statistical-review-of-world-energy.html)
 
 
-As expected, coal, oil and gas are the worlds primary energy sources. The next visualization tries to emphasize in a higher degree.
+As expected, coal, oil and gas are the worlds primary energy sources. The next visualization tries to emphasize this in a higher degree.
 
-```{r pltPrimaryEnergySourcesStack, echo=FALSE, fig.align="center"}
+```{r pltPrimaryEnergySourcesStack, echo=FALSE, fig.width=10, fig.align="center"}
 ggplot(df_global_primary_energy, aes(Year, value, fill=variable)) + 
   labs(y="TWh", title="Global primary energy sources", colour="Source") +
   pltTheme +
@@ -559,7 +559,7 @@ ggplot(df_arctic_sea_ice, aes(x=year, y=extent)) +
 ```
 Source: [NASA climate](https://climate.nasa.gov/vital-signs/arctic-sea-ice/)
 
-Here is a plot of changing water levels globally, and  for some of the larger oceans in the world. The change is expressed in millimeters and the sea level is thought to be rising by an average of three millimeters a year. 
+Here is a graph of changing water levels globally, and  for some of the larger oceans in the world. The change is expressed in millimeters and the sea level is thought to be rising by an average of three millimeters a year. 
 
 ```{r pltSeaLevel, echo=FALSE, fig.width=14, fig.align="center", message=FALSE, warning=FALSE}
 ggplot(data=df_sea_level_by_ocean, aes(x=year, y=value, color=variable)) +
