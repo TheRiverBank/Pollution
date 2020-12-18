@@ -603,10 +603,11 @@ As the next chart shows, deaths because of nuclear energy is surprisingly low.
 
 ```{r pltDeathsByEnergySource, echo=FALSE, fig.width=8, fig.height=7, fig.align="center"}
 ggplot(df_deaths_by_source, aes(x = Source, y = Deaths_Per_1000_TWh, fill = Source)) + 
+  geom_col() +
   labs(y="Deaths", x="Energy source", title="Deaths per 1,000 TWh by energy source in 2015")+
+  geom_text(aes(label=as.integer(Deaths_Per_1000_TWh)), position=position_dodge(width=0.9), vjust=-0.25) +
   pltTheme +
-  theme(legend.position = 0) +
-  geom_col()
+  theme(legend.position = 0)
 ```
 Source: [Cambridge House](https://cambridgehouse.com/news/7971/energy-metals-the-worlds-safest-source-of-energy-will-surprise-you)
 
